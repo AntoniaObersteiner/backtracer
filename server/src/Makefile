@@ -1,9 +1,9 @@
 PKGDIR		?= ../..
 L4DIR		?= $(PKGDIR)/../..
 
-TARGET		= qsort
+TARGET		= backtracer
 SRC_C		= main.c
 
-LIBS     += -ldl -l4re-c-util
+LIBS     += -l4re-c-util
 
 include $(L4DIR)/mk/prog.mk
