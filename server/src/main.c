@@ -76,18 +76,120 @@ l4_debugger_get_backtrace_buffer_section(
 	return syscall_result;
 }
 
-void print_backtrace_buffer_section (unsigned long * buffer, unsigned long words) {
-	const unsigned word_width = 4;
-	for (unsigned w = 0; w < words; w++) {
-		if (w % word_width == 0)
-			printf("--> %2d: ", w);
+#define BLOCK_SIZE 1024
+#define BLOCK_DATA_SIZE (BLOCK_SIZE - 3 * sizeof(unsigned long))
+const unsigned long block_data_capacity_in_bytes = BLOCK_DATA_SIZE;
+const unsigned long block_data_capacity_in_words = block_data_capacity_in_bytes / sizeof(unsigned long);
 
-		printf("%16lx ", buffer[w]);
-		if (w % word_width == word_width - 1)
+enum block_flags_t {
+	BLOCK_REDUNDANCY = (1UL << 0),
+};
+
+typedef struct block_t_struct {
+	unsigned long id;
+	unsigned long data_length_in_words;
+	unsigned long flags;
+	unsigned long reserved;
+	unsigned long data [BLOCK_DATA_SIZE / sizeof(unsigned long)];
+} block_t;
+static_assert (
+	sizeof(block_t) == BLOCK_SIZE,
+	"block_t is not of the right size. please adjust block_data_capacity_in_bytes"
+);
+
+block_t make_block(
+	unsigned long * data,
+	unsigned long data_length_in_words,
+	unsigned long flags
+) {
+	static unsigned long id = 0;
+
+	block_t block;
+
+	block.id = id;
+	block.data_length_in_words = data_length_in_words;
+	block.flags = flags;
+
+	if (data_length_in_words > block_data_capacity_in_words) {
+		data_length_in_words = block_data_capacity_in_words;
+	}
+
+	unsigned long i;
+	for (i = 0; i < data_length_in_words; i++) {
+		block.data[i] = data[i];
+	}
+	for (; i < block_data_capacity_in_words; i++) {
+		block.data[i] = 0;
+	}
+
+	id ++;
+	return block;
+}
+
+void xor_blocks(block_t * target, const block_t * to_add) {
+	unsigned long min_len = target->data_length_in_words;
+	if (target->data_length_in_words < min_len) {
+		min_len = target->data_length_in_words;
+	}
+	for (unsigned long i = 0; i < min_len; i++) {
+		target->data[i] = target->data[i] | to_add->data[i];
+	}
+}
+
+void print_block(const block_t * block) {
+	const unsigned word_columns = 4;
+	unsigned long * raw_block = (unsigned long *) block;
+	for (unsigned w = 0; w < sizeof(block_t) / sizeof(unsigned long); w++) {
+		if (w % word_columns == 0)
+			printf(">=< %3d: ", w);
+
+		printf("%16lx ", raw_block[w]);
+		if (w % word_columns == word_columns - 1)
 			printf("\n");
 	}
 
 	printf("\n");
+}
+void print_backtrace_buffer_section (const unsigned long * buffer, unsigned long words) {
+	unsigned long size_in_blocks = words / block_data_capacity_in_words;
+	printf("--> btbs: %ld bytes, %ld words, %ld blocks\n", words * sizeof(unsigned long), words, size_in_blocks);
+
+	// initialize the xor block with the first amount of data
+	block_t xor_block = make_block (
+		buffer,
+		(block_data_capacity_in_words < words ? block_data_capacity_in_words : words),
+		0
+	);
+
+	// print while it still behaves like the first block of data.
+	print_block(&xor_block);
+
+	xor_block.flags |= BLOCK_REDUNDANCY;
+
+	for (unsigned long b = 1; b < size_in_blocks; b++) {
+		block_t block = make_block(
+			buffer + b * block_data_capacity_in_words,
+			block_data_capacity_in_words,
+			0
+		);
+
+		print_block(&block);
+		xor_blocks(&xor_block, &block);
+	}
+
+	unsigned long remainder = words % block_data_capacity_in_words;
+	if (size_in_blocks > 0 && remainder) {
+		block_t block = make_block(
+			buffer + words - remainder,
+			remainder,
+			0
+		);
+
+		print_block(&block);
+		xor_blocks(&xor_block, &block);
+	}
+
+	print_block(&xor_block);
 }
 
 enum backtrace_buffer_protocol {
@@ -119,7 +221,8 @@ unsigned long export_backtrace_buffer_section (l4_cap_idx_t cap, bool full_secti
 		&remaining_words
 	);
 
-	print_backtrace_buffer_section(buffer, returned_words);
+	if (returned_words)
+		print_backtrace_buffer_section(buffer, returned_words);
 
 	return remaining_words;
 }
@@ -129,7 +232,7 @@ int main(void) {
 	bool is_valid = l4_is_valid_cap(dbg_cap) > 0;
 	printf(">>> dbg_cap %ld is %svalid <<<\n", dbg_cap, is_valid ? "" : "not ");
 
-	// TODO: talk to the other thread, e.g. via a semaphore?
+	// TODO: wait for some event? nope, do than in post-processing.
 
 	// 977 * 2^10 us ~= 1000 ms
 	unsigned long mantissa = 977;
@@ -141,13 +244,18 @@ int main(void) {
 	);
 
 	for (int i = 0; i < 10; i++) {
-		unsigned long remaining_words = export_backtrace_buffer_section(dbg_cap, true);
-
 		// TODO: we probably want to wait for a complete page, but not busily
 		// except that, at the end, we want to get any remainder out.
+
+		unsigned long remaining_words = export_backtrace_buffer_section(dbg_cap, true);
+
 		if (remaining_words == 0) {
-			printf("wait for results with timeout %ld us == %f s...\n", timeout_us, (double) timeout_us / 1000000.0);
+			printf(
+				"wait for results with timeout %ld us == %f ms...\n",
+				timeout_us, (double) timeout_us / 1000.0
+			);
 			// TODO: replace with waiting on BTB-IRQ-cap that we get from dbg_cap.
+			// TODO: alternatively: l4_thread_switch(other thread among traced)
 			// pseudo-sleep
 			l4_msgtag_t sleep_result = l4_irq_receive(dbg_cap, timeout);
 			if (l4_msgtag_has_error(sleep_result)) {
