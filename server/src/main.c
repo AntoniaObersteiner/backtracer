@@ -16,6 +16,7 @@
 #include <l4/sys/debugger.h>
 #include <l4/re/env.h>
 #include <l4/sys/linkage.h>
+#include <l4/sys/irq.h>
 
 unsigned long print_utcb(
 	const char * prefix,
@@ -46,6 +47,7 @@ l4_debugger_get_backtrace_buffer_section(
 	l4_cap_idx_t cap,
 	unsigned long * buffer,
 	unsigned long buffer_capacity_in_bytes,
+	unsigned long flags,
 	unsigned long * returned_words,
 	unsigned long * remaining_words
 ) L4_NOTHROW {
@@ -53,7 +55,8 @@ l4_debugger_get_backtrace_buffer_section(
 	l4_utcb_mr_u(utcb)->mr[0] = L4_DEBUGGER_GET_BTB_SECTION;
 	l4_utcb_mr_u(utcb)->mr[1] = buffer;
 	l4_utcb_mr_u(utcb)->mr[2] = buffer_capacity_in_bytes;
-	l4_msgtag_t tag = l4_msgtag(0, 3, 0, 0);
+	l4_utcb_mr_u(utcb)->mr[3] = flags;
+	l4_msgtag_t tag = l4_msgtag(0, 4, 0, 0);
 
 	print_utcb("=>>", utcb, tag);
 
@@ -87,7 +90,11 @@ void print_backtrace_buffer_section (unsigned long * buffer, unsigned long words
 	printf("\n");
 }
 
-bool export_backtrace_buffer_section (l4_cap_idx_t cap) {
+enum backtrace_buffer_protocol {
+	FULL_SECTION_ONLY = 1,
+};
+
+unsigned long export_backtrace_buffer_section (l4_cap_idx_t cap, bool full_section_only) {
 	const unsigned kumem_page_order = 3;
 	const unsigned kumem_capacity_in_bytes = (1 << (kumem_page_order + 10));
 	static l4_addr_t kumem = 0;
@@ -107,13 +114,14 @@ bool export_backtrace_buffer_section (l4_cap_idx_t cap) {
 		cap,
 		buffer,
 		kumem_capacity_in_bytes,
+		(full_section_only ? FULL_SECTION_ONLY : 0),
 		&returned_words,
 		&remaining_words
 	);
 
 	print_backtrace_buffer_section(buffer, returned_words);
 
-	return (remaining_words > 0);
+	return remaining_words;
 }
 
 int main(void) {
@@ -121,7 +129,32 @@ int main(void) {
 	bool is_valid = l4_is_valid_cap(dbg_cap) > 0;
 	printf(">>> dbg_cap %ld is %svalid <<<\n", dbg_cap, is_valid ? "" : "not ");
 
-	// TODO: talk to the other thread, e.g. via a semaphore
+	// TODO: talk to the other thread, e.g. via a semaphore?
 
-	while (export_backtrace_buffer_section(dbg_cap)) {}
+	// 977 * 2^10 us ~= 1000 ms
+	unsigned long mantissa = 977;
+	unsigned long exponent = 10;
+	unsigned long timeout_us = mantissa * (1 << exponent);
+	l4_timeout_t timeout = l4_ipc_timeout(
+		mantissa, exponent,
+		mantissa, exponent
+	);
+
+	for (int i = 0; i < 10; i++) {
+		unsigned long remaining_words = export_backtrace_buffer_section(dbg_cap, true);
+
+		// TODO: we probably want to wait for a complete page, but not busily
+		// except that, at the end, we want to get any remainder out.
+		if (remaining_words == 0) {
+			printf("wait for results with timeout %ld us == %f s...\n", timeout_us, (double) timeout_us / 1000000.0);
+			// TODO: replace with waiting on BTB-IRQ-cap that we get from dbg_cap.
+			// pseudo-sleep
+			l4_msgtag_t sleep_result = l4_irq_receive(dbg_cap, timeout);
+			if (l4_msgtag_has_error(sleep_result)) {
+				printf("sleep error!\n");
+			}
+		}
+	}
+	// export remaining non-full section
+	unsigned long remaining_words = export_backtrace_buffer_section(dbg_cap, false);
 }
