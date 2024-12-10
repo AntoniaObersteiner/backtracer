@@ -1,2 +1,2 @@
-make -f external.make run
+make -f External.make run
 
