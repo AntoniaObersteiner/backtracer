@@ -32,7 +32,7 @@ unsigned long get_block_line (
 			return 0;
 		} else if (line_buffer_filled < 0) {
 			printf("got return code %ld!\n", line_buffer_filled);
-			perror("get line");
+			perror("getline error");
 			return 0;
 		}
 
@@ -360,7 +360,9 @@ int main(int argc, char * argv []) {
 		block_array_filled = make_reorder(reorder, blocks, block_array_filled, block_id_start);
 
 		printf("write blocks\n");
-		write_block_data(output_file, reorder, block_array_filled);
+		// -1 because of the redundancy block at the end,
+		// separate counter for reoder might be good // TODO
+		write_block_data(output_file, reorder, block_array_filled - 1);
 		printf("done\n");
 		block_array_filled = 0;
 		block_buffer_filled = 0;
