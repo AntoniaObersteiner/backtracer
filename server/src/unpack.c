@@ -53,7 +53,6 @@ unsigned long get_block_line (
 				return line_buffer_filled - i;
 			}
 		}
-		if (dbg) printf("line %4ld has no block marker '%s': '%s'\n", *line_number, block_marker, line_buffer);
 	} while (line_buffer_filled); // while we still get bytes
 	if (dbg) printf("no line after line number %4ld\n", *line_number);
 }
@@ -113,7 +112,7 @@ void add_to_raw_block_data(
 			&to_skip
 		);
 		if (got_word) {
-			printf(
+			if (0) printf(
 				"written word to %p (%ld): %016lx\n",
 				block_buffer + *block_buffer_filled,
 				*block_buffer_filled,
@@ -125,36 +124,91 @@ void add_to_raw_block_data(
 	}
 }
 
+void recover_block(
+	block_t * blocks,
+	const block_t ** reorder,
+	unsigned long block_array_filled
+) {
+	block_t * recovered_block = &(blocks[block_array_filled]);
+	recovered_block->id = -1; // start with invalid id
+	for (unsigned long b = 0; b < block_array_filled; b++) {
+		if (reorder[b]) {
+			xor_blocks(recovered_block, reorder[b]);
+		} else {
+			if (recovered_block->id == -1) {
+				printf(
+					"recovering block (id = %ld, idx = %ld) from %ld blocks\n",
+					b, block_array_filled, block_array_filled
+				);
+				recovered_block->id = b;
+				reorder[b] = recovered_block;
+				recovered_block->data_length_in_words = block_data_capacity_in_words; // free guess. TODO?
+			} else {
+				printf("found missing block %ld, but %ld was previously found?\n", b, recovered_block->id);
+				exit(1);
+			}
+		}
+	}
+}
+
+// returns new length of blocks and reorder (reorder will be nullptr on last entry because of redundancy block)
 unsigned long make_reorder(
 	const block_t ** reorder,
-	const block_t * blocks,
+	block_t * blocks,
 	unsigned long block_array_filled,
 	unsigned long block_id_start
 ) {
+	unsigned long max_id = 0;
 	for (unsigned long b = 0; b < block_array_filled; b++) {
+		if (blocks[b].id > max_id) {
+			max_id = blocks[b].id;
+		}
+	}
+	unsigned long rel_max_id = max_id - block_id_start;
+	if (rel_max_id > BLOCK_ARRAY_CAPACITY) {
+		printf(
+			"we have max block id %ld (section start at %ld), but only %d capacity!\n",
+			max_id, block_id_start, BLOCK_ARRAY_CAPACITY
+		);
+	}
+	unsigned long missing = block_array_filled - rel_max_id;
+	printf("%ld blocks missing: %ld - %ld!\n", missing, block_array_filled, rel_max_id);
+
+	if (missing > 1) {
+		printf("there are %ld blocks missing. that is beyond the error correction implemented!\n", missing);
+		exit(1);
+	}
+
+	for (unsigned long b = 0; b < rel_max_id; b++) {
 		reorder[b] = 0;
 	}
-	unsigned long missing = block_array_filled;
 	for (unsigned long b = 0; b < block_array_filled; b++) {
 		unsigned long id = blocks[b].id;
 		if (id < block_id_start) {
 			printf(
 				"ignoring block with id %ld from old section "
-				"(start if of current section is %ld)!\n",
+				"(start of current section is %ld)!\n",
 				id, block_id_start
 			);
 			continue;
 		}
 		if (blocks[b].flags & BLOCK_REDUNDANCY) {
-			missing --;
+			printf("redundancy block (id = %ld, idx = %ld).\n", id, b);
 			continue;
 		}
 
 		reorder[id - block_id_start] = &(blocks[b]);
-		missing --;
 	}
 
-	return missing;
+	if (missing == 1) {
+		if (rel_max_id == BLOCK_ARRAY_CAPACITY) {
+			printf("there is no capacity for the missing block to be recovered!\n");
+			exit(1);
+		}
+		recover_block(blocks, reorder, block_array_filled);
+		block_array_filled++;
+	}
+	return block_array_filled;
 }
 
 void write_block_data(
@@ -294,13 +348,7 @@ int main(int argc, char * argv []) {
 
 		// the redundancy block has the index of the first block its redundancy covers
 		long block_id_start = block->id;
-		unsigned long missing = make_reorder(reorder, blocks, block_array_filled, block_id_start);
-		if (missing > 0) {
-			printf("there are blocks missing (%ld). there is currently no error correction implemented!\n", missing);
-			exit(1);
-		}
-
-		// TODO: check xor
+		block_array_filled = make_reorder(reorder, blocks, block_array_filled, block_id_start);
 
 		printf("write blocks\n");
 		write_block_data(output_file, reorder, block_array_filled);
