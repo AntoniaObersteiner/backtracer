@@ -2,5 +2,6 @@ example.btb
 stderr
 stdout
 unpack
+interpret
 *.swp
 *.swo
