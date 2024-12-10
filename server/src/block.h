@@ -49,6 +49,7 @@ block_t make_block(
 	block.id = id;
 	block.data_length_in_words = data_length_in_words;
 	block.flags = flags;
+	block.reserved = 0;
 
 	if (data_length_in_words > block_data_capacity_in_words) {
 		data_length_in_words = block_data_capacity_in_words;

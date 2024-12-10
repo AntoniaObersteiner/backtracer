@@ -266,6 +266,9 @@ int main(int argc, char * argv []) {
 			block_marker_default
 		);
 		if (!line_buffer_filled)
+			// we got no data from input, no more input exists
+			// TODO: does this handle incomplete blocks?
+			// => they should not exist, I believe
 			break;
 
 		add_to_raw_block_data(
