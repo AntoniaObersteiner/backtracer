@@ -277,7 +277,16 @@ int main(int argc, char * argv []) {
 	}
 
 	if (strcmp(output_filename, "-") != 0) {
-		output_fd = open(output_filename, O_WRONLY | O_CREAT);
+		output_fd = open(
+			output_filename,
+			O_WRONLY |
+			O_CREAT,
+			S_IRUSR |
+			S_IWUSR |
+			S_IRGRP |
+			S_IRGRP |
+			S_IROTH
+		);
 		printf("output_fd: %d\n", output_fd);
 		if (output_fd < 0) {
 			perror(output_filename);
