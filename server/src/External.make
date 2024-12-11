@@ -5,6 +5,7 @@ HEADERS=\
 	block.h \
 
 SAMPLE=../../../../../docker_log/good_sample
+SAMPLE=../../../../../docker_log/full_sample
 OUTPUT=example.btb
 
 unpack: unpack.c $(HEADERS)
