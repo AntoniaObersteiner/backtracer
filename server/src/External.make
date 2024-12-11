@@ -4,6 +4,9 @@ CXXFLAGS= --max-errors=3 -ggdb --std=c++20 -I../../../../../ELFIO
 HEADERS=\
 	block.h \
 
+CXXHEADERS=\
+	elfi.hpp \
+
 SAMPLE=../../../../../docker_log/good_sample
 SAMPLE=../../../../../docker_log/full_sample
 SAMPLE=../../../../../docker_log/long_sample
@@ -12,8 +15,7 @@ BINARY_DIR=../../../../../__build__/amd64/l4/bin/amd64_gen/l4f/
 BINARY_LIST=binaries.list
 
 unpack: unpack.c $(HEADERS)
-interpret: interpret.cpp
-elfi: elfi.hpp
+interpret: interpret.cpp $(CXXHEADERS)
 
 $(BINARY_LIST): list_binaries.sh $(BINARY_DIR)
 	./list_binaries.sh $(BINARY_DIR) $(BINARY_LIST)
