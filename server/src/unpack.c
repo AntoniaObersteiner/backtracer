@@ -225,7 +225,7 @@ unsigned long make_reorder(
 			max_id, block_id_start, BLOCK_ARRAY_CAPACITY
 		);
 	}
-	unsigned long missing = block_array_filled - rel_max_id;
+	unsigned long missing = rel_max_id - block_array_filled + 2;
 	printf("%ld blocks missing: %ld - %ld!\n", missing, block_array_filled, rel_max_id);
 
 	if (missing > 1) {
