@@ -9,19 +9,20 @@ SAMPLE=../../../../../docker_log/full_sample
 SAMPLE=../../../../../docker_log/long_sample
 OUTPUT=example.btb
 BINARY_DIR=../../../../../__build__/amd64/l4/bin/amd64_gen/l4f/
+BINARY_LIST=binaries.list
 
 unpack: unpack.c $(HEADERS)
 interpret: interpret.cpp
 elfi: elfi.hpp
 
-binaries.list: list_binaries.sh $(BINARY_DIR)
-	./list_binaries.sh $(BINARY_DIR)
+$(BINARY_LIST): list_binaries.sh $(BINARY_DIR)
+	./list_binaries.sh $(BINARY_DIR) $(BINARY_LIST)
 
 $(SAMPLE).cleaned: $(SAMPLE)
 	cat -v $(SAMPLE) > $(SAMPLE).cleaned
 
 .PHONY: run
-run: unpack $(SAMPLE).cleaned interpret
+run: unpack $(SAMPLE).cleaned interpret $(BINARY_LIST)
 	./unpack $(SAMPLE).cleaned $(OUTPUT)
 	./interpret $(OUTPUT)
 
