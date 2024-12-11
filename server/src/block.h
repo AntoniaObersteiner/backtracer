@@ -74,7 +74,7 @@ void xor_blocks(block_t * target, const block_t * to_add) {
 		min_len = target->data_length_in_words;
 	}
 	for (unsigned long i = 0; i < min_len; i++) {
-		target->data[i] = target->data[i] | to_add->data[i];
+		target->data[i] = target->data[i] ^ to_add->data[i];
 	}
 }
 
