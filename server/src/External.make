@@ -1,6 +1,6 @@
 
 CFLAGS= --max-errors=3 -ggdb
-CXXFLAGS= --max-errors=3 -ggdb --std=c++20
+CXXFLAGS= --max-errors=3 -ggdb --std=c++20 -I../../../../../ELFIO
 HEADERS=\
 	block.h \
 
