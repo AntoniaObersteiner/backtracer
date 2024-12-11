@@ -3,5 +3,6 @@ stderr
 stdout
 unpack
 interpret
+binaries.list
 *.swp
 *.swo

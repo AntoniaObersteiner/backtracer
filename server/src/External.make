@@ -6,10 +6,16 @@ HEADERS=\
 
 SAMPLE=../../../../../docker_log/good_sample
 SAMPLE=../../../../../docker_log/full_sample
+SAMPLE=../../../../../docker_log/long_sample
 OUTPUT=example.btb
+BINARY_DIR=../../../../../__build__/amd64/l4/bin/amd64_gen/l4f/
 
 unpack: unpack.c $(HEADERS)
 interpret: interpret.cpp
+elfi: elfi.hpp
+
+binaries.list: list_binaries.sh $(BINARY_DIR)
+	./list_binaries.sh $(BINARY_DIR)
 
 $(SAMPLE).cleaned: $(SAMPLE)
 	cat -v $(SAMPLE) > $(SAMPLE).cleaned
