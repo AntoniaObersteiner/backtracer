@@ -127,12 +127,32 @@ void add_to_raw_block_data(
 void recover_block(
 	block_t * blocks,
 	const block_t ** reorder,
+	const block_t * redundancy_block,
 	unsigned long block_array_filled
 ) {
 	block_t * recovered_block = &(blocks[block_array_filled]);
 	recovered_block->id = -1; // start with invalid id
+	for (unsigned long d = 0; d < block_data_capacity_in_words; d++) {
+		recovered_block->data[d] = 0;
+	}
 	for (unsigned long b = 0; b < block_array_filled; b++) {
 		if (reorder[b]) {
+			printf (
+				"recovered_block: id %016lx, len %016lx, flags %016lx, data:\n"
+				"%016lx %016lx %016lx %016lx\n"
+				"%016lx %016lx %016lx %016lx\n",
+				recovered_block->id,
+				recovered_block->data_length_in_words,
+				recovered_block->flags,
+				recovered_block->data[0],
+				recovered_block->data[1],
+				recovered_block->data[2],
+				recovered_block->data[3],
+				recovered_block->data[4],
+				recovered_block->data[5],
+				recovered_block->data[6],
+				recovered_block->data[7]
+			);
 			xor_blocks(recovered_block, reorder[b]);
 		} else {
 			if (recovered_block->id == -1) {
@@ -149,6 +169,39 @@ void recover_block(
 			}
 		}
 	}
+	printf (
+		"recovered_block: id %016lx, len %016lx, flags %016lx, data:\n"
+		"%016lx %016lx %016lx %016lx\n"
+		"%016lx %016lx %016lx %016lx\n",
+		recovered_block->id,
+		recovered_block->data_length_in_words,
+		recovered_block->flags,
+		recovered_block->data[0],
+		recovered_block->data[1],
+		recovered_block->data[2],
+		recovered_block->data[3],
+		recovered_block->data[4],
+		recovered_block->data[5],
+		recovered_block->data[6],
+		recovered_block->data[7]
+	);
+	xor_blocks(recovered_block, redundancy_block);
+	printf (
+		"recovered_block: id %016lx, len %016lx, flags %016lx, data:\n"
+		"%016lx %016lx %016lx %016lx\n"
+		"%016lx %016lx %016lx %016lx\n",
+		recovered_block->id,
+		recovered_block->data_length_in_words,
+		recovered_block->flags,
+		recovered_block->data[0],
+		recovered_block->data[1],
+		recovered_block->data[2],
+		recovered_block->data[3],
+		recovered_block->data[4],
+		recovered_block->data[5],
+		recovered_block->data[6],
+		recovered_block->data[7]
+	);
 }
 
 // returns new length of blocks and reorder (reorder will be nullptr on last entry because of redundancy block)
@@ -164,6 +217,7 @@ unsigned long make_reorder(
 			max_id = blocks[b].id;
 		}
 	}
+	printf("max_id %ld from %ld read blocks\n", max_id, block_array_filled);
 	unsigned long rel_max_id = max_id - block_id_start;
 	if (rel_max_id > BLOCK_ARRAY_CAPACITY) {
 		printf(
@@ -179,6 +233,7 @@ unsigned long make_reorder(
 		exit(1);
 	}
 
+	block_t * redundancy_block = 0;
 	for (unsigned long b = 0; b < rel_max_id; b++) {
 		reorder[b] = 0;
 	}
@@ -194,10 +249,13 @@ unsigned long make_reorder(
 		}
 		if (blocks[b].flags & BLOCK_REDUNDANCY) {
 			printf("redundancy block (id = %ld, idx = %ld).\n", id, b);
+			if (blocks[b].id == block_id_start)
+				redundancy_block = &(blocks[b]);
 			continue;
 		}
 
 		reorder[id - block_id_start] = &(blocks[b]);
+		printf("reorder id %ld -> idx %ld\n", id, b);
 	}
 
 	if (missing == 1) {
@@ -205,7 +263,11 @@ unsigned long make_reorder(
 			printf("there is no capacity for the missing block to be recovered!\n");
 			exit(1);
 		}
-		recover_block(blocks, reorder, block_array_filled);
+		if (!redundancy_block) {
+			printf("we want to recover, but the redundancy block is not in the blocks?\n");
+			exit(1);
+		}
+		recover_block(blocks, reorder, redundancy_block, block_array_filled);
 		block_array_filled++;
 	}
 	return block_array_filled;
@@ -342,7 +404,10 @@ int main(int argc, char * argv []) {
 		);
 
 		if (block_buffer_filled == sizeof(block_t) / sizeof(unsigned long)) {
-			printf("filled block %ld (@%p) with %ld words\n", block_array_filled, block_raw, block_buffer_filled);
+			printf(
+				"filled block idx = %ld, id = %ld (@%p) with %ld words\n",
+				block_array_filled, blocks[block_array_filled].id, block_raw, block_buffer_filled
+			);
 			block_array_filled ++;
 			block_raw = (unsigned long *) &(blocks[block_array_filled]);
 			block_buffer_filled = 0;
@@ -360,8 +425,6 @@ int main(int argc, char * argv []) {
 		block_array_filled = make_reorder(reorder, blocks, block_array_filled, block_id_start);
 
 		printf("write blocks\n");
-		// -1 because of the redundancy block at the end,
-		// separate counter for reoder might be good // TODO
 		write_block_data(output_file, reorder, block_array_filled - 1);
 		printf("done\n");
 		block_array_filled = 0;

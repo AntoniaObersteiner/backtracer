@@ -104,6 +104,7 @@ void print_backtrace_buffer_section (const unsigned long * buffer, unsigned long
 
 		print_block(&block, 0, true);
 		xor_blocks(&xor_block, &block);
+		print_block(&xor_block, "XOR", true);
 	}
 
 	unsigned long remainder = words % block_data_capacity_in_words;
