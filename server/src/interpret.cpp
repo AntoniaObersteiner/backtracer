@@ -184,10 +184,10 @@ public:
 		const uint64_t * current = buffer;
 		while (current - buffer + 4 < length_in_words) {
 			const size_t length = reinterpret_cast<size_t>(*(current + 1));
-			self().push_back(current);
-			current += length;
 			if (length == 0)
 				break;
+			self().push_back(current);
+			current += length;
 		}
 	}
 };
