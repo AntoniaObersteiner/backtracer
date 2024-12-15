@@ -24,6 +24,70 @@ inline const char * get_section_type_name (ELFIO::Elf_Word section_type) {
 	}
 	return section_type_name;
 }
+
+inline ELFIO::elfio get_elfio_reader (const std::string& filename) {
+	using namespace ELFIO;
+
+	// Create elfio reader
+	elfio reader;
+	// Load ELF data
+	if (!reader.load(filename)) {
+		throw std::runtime_error("Can't find or process ELF file '" + filename + "'");
+	}
+
+	return reader;
+}
+
+inline const std::string get_symbol (ELFIO::elfio & reader, unsigned long instruction_pointer) {
+	using namespace ELFIO;
+
+	// Print ELF file sections info
+	Elf_Half sec_num = reader.sections.size();
+	std::cout << "Number of sections: " << sec_num << std::endl;
+	std::cout << " [sc] label               size type" << std::endl;
+	for (int i = 0; i < sec_num; ++i) {
+		section* psec = reader.sections[i];
+		std::cout << std::format(
+			" [{:2}] {:15} {:8} {:20}",
+			i, psec->get_name(),
+			psec->get_size(),
+			get_section_type_name(psec->get_type())
+		) << std::endl;
+		// Access section's data
+		const char* p = reader.sections[i]->get_data();
+
+		if (psec->get_type() == SHT_SYMTAB) {
+			const symbol_section_accessor symbols(reader, psec);
+			std::cout << std::format(
+				"   [{:2}] {:30} {:16} {:16} {} {} {:16} {}",
+				"sb", "name", "value", "size", "bind", "type", "section_index", "other"
+			) << std::endl;
+			for (unsigned int j = 0; j < symbols.get_symbols_num(); ++j) {
+				std::string name;
+				Elf64_Addr value;
+				Elf_Xword size;
+				unsigned char bind;
+				unsigned char type;
+				Elf_Half section_index;
+				unsigned char other;
+				symbols.get_symbol(
+					j, name, value, size, bind,
+					type, section_index, other
+				);
+				if (value <= instruction_pointer && instruction_pointer < value + size) {
+					std::cout << std::format(
+						"   [{:2}] {:30} {:16x} {:16x} {} {} {:16x} {}",
+						j, name, value, size, bind, type, section_index, other
+					) << std::endl;
+					return name;
+				} else {
+					continue;
+				}
+			}
+		}
+	}
+}
+
 inline int elfi_test(std::string filename) {
 	using namespace ELFIO;
 

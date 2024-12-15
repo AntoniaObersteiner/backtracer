@@ -292,13 +292,14 @@ int main(int argc, char * argv []) {
 
 	std::string binaries_list_filename = "./binaries.list";
 	BinariesList binaries_list { binaries_list_filename };
+
+	std::map<std::string, ELFIO::elfio> elfio_readers;
 	for (const auto &[name, path] : binaries_list) {
 		std::cout << "binary '" << name << "' at path '" << path << "'" << std::endl;
-		elfi_test(path);
-		std::cout << std::endl;
+		elfio_readers[name] = get_elfio_reader(path);
+		// elfi_test(path);
 	}
 
-	return 0;
 	std::cout << std::endl;
 	uint64_t buffer[BUFFER_CAPACITY_IN_WORDS];
 
