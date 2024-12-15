@@ -298,6 +298,7 @@ int main(int argc, char * argv []) {
 		std::cout << std::endl;
 	}
 
+	return 0;
 	std::cout << std::endl;
 	uint64_t buffer[BUFFER_CAPACITY_IN_WORDS];
 

@@ -1,7 +1,29 @@
 #include <iostream>
 #include <format>
 #include <elfio/elfio.hpp>
+#include <elfio/elfio_dump.hpp>
 
+inline const char * get_section_type_name (ELFIO::Elf_Word section_type) {
+	using namespace ELFIO;
+	const char * section_type_name = 0;
+
+	for (
+		int stti = 0;
+		stti < sizeof(section_type_table) / sizeof(struct section_type_table_t);
+		stti++
+	) {
+		if (section_type_table[stti].key == section_type) {
+			section_type_name = section_type_table[stti].str;
+			break;
+		}
+	}
+	if (section_type_name == 0) {
+		throw std::runtime_error(
+			"no section_type_name for type " + std::to_string(section_type)
+		);
+	}
+	return section_type_name;
+}
 inline int elfi_test(std::string filename) {
 	using namespace ELFIO;
 
@@ -31,13 +53,14 @@ inline int elfi_test(std::string filename) {
 	// Print ELF file sections info
 	Elf_Half sec_num = reader.sections.size();
 	std::cout << "Number of sections: " << sec_num << std::endl;
-	std::cout << " [sg] label               size" << std::endl;
+	std::cout << " [sc] label               size type" << std::endl;
 	for (int i = 0; i < sec_num; ++i) {
 		section* psec = reader.sections[i];
 		std::cout << std::format(
-			" [{:2}] {:15} {:8}",
+			" [{:2}] {:15} {:8} {:20}",
 			i, psec->get_name(),
-			psec->get_size()
+			psec->get_size(),
+			get_section_type_name(psec->get_type())
 		) << std::endl;
 		// Access section's data
 		const char* p = reader.sections[i]->get_data();
@@ -71,7 +94,7 @@ inline int elfi_test(std::string filename) {
 	// Print ELF file segments info
 	Elf_Half seg_num = reader.segments.size();
 	std::cout << "Number of segments: " << seg_num << std::endl;
-	std::cout << " [sc]            flags  virtual address     size in file   size in memory" << std::endl;
+	std::cout << " [sg]            flags  virtual address     size in file   size in memory" << std::endl;
 	for (int i = 0; i < seg_num; ++i) {
 		const segment* pseg = reader.segments[i];
 		std::cout << std::format(
