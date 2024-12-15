@@ -11,7 +11,7 @@ SAMPLE=../../../../../docker_log/good_sample
 SAMPLE=../../../../../docker_log/full_sample
 SAMPLE=../../../../../docker_log/long_sample
 OUTPUT=example.btb
-BINARY_DIR=../../../../../__build__/amd64/l4/bin/amd64_gen/l4f/
+BINARY_DIR=../../../../../__build__/amd64/l4/bin/amd64_gen/l4f/.debug
 BINARY_LIST=binaries.list
 
 unpack: unpack.c $(HEADERS)

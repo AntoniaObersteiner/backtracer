@@ -9,9 +9,20 @@ echo "clearing and writing '$output_file'"
 echo "" > $output_file
 
 for f in $(ls $path); do
-	if [ -x $path/$f ]; then
-		echo "$f: $path/$f" >> $output_file
+	if [ -L $path/$f ]; then
+		if [ -f $(readlink $path/$f) ]; then
+			echo "$f: $(readllink $path/$f)" >> $output_file
+		else
+			rebased=$(readlink $path/$f | sed 's+/build+../../../../../__build__+')
+			if [ -f $rebased ]; then
+				echo "$f: $rebased" >> $output_file
+			fi
+		fi
 	else
-		echo "$path/$f not executable"
+		if [ -x $path/$f ]; then
+			echo "$f: $path/$f" >> $output_file
+		else
+			echo "$path/$f not executable"
+		fi
 	fi
 done
