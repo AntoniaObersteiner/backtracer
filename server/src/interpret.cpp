@@ -167,16 +167,21 @@ public:
 		for (; offset < length_in_words; offset++) {
 			payload[offset - payload_offset] = buffer[offset];
 		}
-		printf("read entry: \n%s\n", to_string().c_str());
 	}
 
 	void add_mapping () const;
 	std::string get_symbol_name (unsigned long virtual_address) const;
+	// return the binaries loaded by task with given id
+	std::string task_binaries (unsigned long task_id) const;
 
 	std::string to_string () const {
 		std::string result;
 		for (const auto & [name, value] : self()) {
-			result += std::format("  {:16}: {:16x}\n", name, value);
+			if (name == "task_id") {
+				result += std::format("  {:16}: {:16x} {}\n", name, value, task_binaries(value));
+			} else {
+				result += std::format("  {:16}: {:16x}\n", name, value);
+			}
 		}
 		for (size_t i = 0; i < payload.size(); i++) {
 			if (self().at("entry_type") == BTE_STACK) {
@@ -246,6 +251,23 @@ public:
 		binaries_by_task[mapping.task_id].emplace_back(mapping.name);
 	}
 
+	std::string task_binaries (unsigned long task_id) {
+		if (!binaries_by_task.contains(task_id)) {
+			return "<task " + std::to_string(task_id) + " has no binaries>";
+		}
+		std::vector<std::string> & binaries = binaries_by_task.at(task_id);
+		std::string result = "";
+		for (int i = 0; i < binaries.size() - 1; i++) {
+			result += binaries[i] + ", ";
+		}
+		if (binaries.size()) {
+			result += binaries.back();
+		} else {
+			result = "<empty>";
+		}
+		return result;
+	}
+
 	std::string lookup_symbol (unsigned long task_id, unsigned long virtual_address) {
 		std::string result = "";
 		std::string result_binary = "";
@@ -277,6 +299,10 @@ public:
 };
 
 static Mappings mappings;
+
+inline std::string Entry::task_binaries (unsigned long task_id) const {
+	return mappings.task_binaries(task_id);
+}
 
 inline void Entry::add_mapping () const {
 	mappings.emplace_back(*this);
@@ -440,6 +466,10 @@ int main(int argc, char * argv []) {
 	printf("read %ld words from file '%s'\n", length_in_words, filename.c_str());
 
 	EntryArray entry_array(RawEntryArray (buffer, length_in_words));
+
+	for (const auto & entry : entry_array) {
+		printf("read entry: \n%s\n", entry.to_string().c_str());
+	}
 
 	return 0;
 }

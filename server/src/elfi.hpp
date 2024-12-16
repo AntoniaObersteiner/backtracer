@@ -80,6 +80,7 @@ inline const std::string get_symbol (ELFIO::elfio & reader, unsigned long instru
 					type, section_index, other
 				);
 				if (value <= instruction_pointer && instruction_pointer < value + size) {
+					/*
 					std::cout << "Number of sections: " << sec_num << std::endl;
 					std::cout << " [sc] label               size type" << std::endl;
 					std::cout << std::format(
@@ -96,6 +97,7 @@ inline const std::string get_symbol (ELFIO::elfio & reader, unsigned long instru
 						"   [{:2}] {:30} {:16x} {:16x} {} {} {:16x} {}",
 						j, name, value, size, bind, type, section_index, other
 					) << std::endl;
+					*/
 					return demangle(name);
 				} else {
 					continue;
