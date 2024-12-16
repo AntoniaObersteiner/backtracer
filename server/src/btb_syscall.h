@@ -18,6 +18,16 @@
 #include <l4/sys/types.h>
 #include <sys/mman.h>
 
+enum backtrace_buffer_control {
+	BTB_CONTROL_START = (1 << 0),
+	BTB_CONTROL_STOP  = (1 << 1),
+	BTB_CONTROL_RESET = (1 << 2),
+};
+
+enum backtrace_buffer_protocol {
+	FULL_SECTION_ONLY = 1,
+};
+
 static inline
 unsigned long print_utcb(
 	const char * prefix,
@@ -41,6 +51,41 @@ unsigned long print_utcb(
   printf("]\n");
 
 	return words;
+}
+
+static inline
+l4_msgtag_t
+l4_debugger_backtracing_control(
+	l4_cap_idx_t cap,
+	unsigned long flags
+) L4_NOTHROW {
+	l4_utcb_t * utcb = l4_utcb();
+	l4_utcb_mr_u(utcb)->mr[0] = L4_DEBUGGER_BTB_CONTROL;
+	l4_utcb_mr_u(utcb)->mr[1] = flags;
+	l4_msgtag_t tag = l4_msgtag(0, 2, 0, 0);
+
+	print_utcb("=>>", utcb, tag);
+
+	l4_msgtag_t syscall_result = l4_invoke_debugger(cap, tag, utcb);
+
+	print_utcb("<<=", utcb, syscall_result);
+
+	return syscall_result;
+}
+
+static inline l4_msgtag_t
+l4_debugger_backtracing_start(l4_cap_idx_t cap) L4_NOTHROW {
+	return l4_debugger_backtracing_control(cap, BTB_CONTROL_START);
+}
+
+static inline l4_msgtag_t
+l4_debugger_backtracing_stop(l4_cap_idx_t cap) L4_NOTHROW {
+	return l4_debugger_backtracing_control(cap, BTB_CONTROL_STOP);
+}
+
+static inline l4_msgtag_t
+l4_debugger_backtracing_reset(l4_cap_idx_t cap) L4_NOTHROW {
+	return l4_debugger_backtracing_control(cap, BTB_CONTROL_RESET);
 }
 
 static inline
@@ -121,10 +166,6 @@ void print_backtrace_buffer_section (const unsigned long * buffer, unsigned long
 
 	print_block(&xor_block, 0, true);
 }
-
-enum backtrace_buffer_protocol {
-	FULL_SECTION_ONLY = 1,
-};
 
 static inline
 unsigned long
