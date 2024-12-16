@@ -136,7 +136,7 @@ void print_backtrace_buffer_section (const unsigned long * buffer, unsigned long
 	);
 
 	// print while it still behaves like the first block of data.
-	print_block(&xor_block, 0, true);
+	print_block(&xor_block, 0);
 
 	xor_block.flags |= BLOCK_REDUNDANCY;
 
@@ -147,9 +147,9 @@ void print_backtrace_buffer_section (const unsigned long * buffer, unsigned long
 			0
 		);
 
-		print_block(&block, 0, true);
+		print_block(&block, 0);
 		xor_blocks(&xor_block, &block);
-		print_block(&xor_block, "XOR", true);
+		print_block(&xor_block, "XOR");
 	}
 
 	unsigned long remainder = words % block_data_capacity_in_words;
@@ -160,11 +160,11 @@ void print_backtrace_buffer_section (const unsigned long * buffer, unsigned long
 			0
 		);
 
-		print_block(&block, 0, true);
+		print_block(&block, 0);
 		xor_blocks(&xor_block, &block);
 	}
 
-	print_block(&xor_block, 0, true);
+	print_block(&xor_block, 0);
 }
 
 static inline

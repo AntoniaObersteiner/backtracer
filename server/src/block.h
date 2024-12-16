@@ -78,14 +78,14 @@ void xor_blocks(block_t * target, const block_t * to_add) {
 	}
 }
 
-
+// block marker[block id/word offset]
+const char * const block_format_default = "%s [%08lx.%02x] ";
 const char * const block_marker_default = ">=<";
 
 static inline
 void print_block(
 	const block_t * block,
-	const char * block_marker,
-	const bool print_word_numbers
+	const char * block_marker
 ) {
 
 	const unsigned word_columns = 4;
@@ -96,9 +96,7 @@ void print_block(
 
 	for (unsigned w = 0; w < sizeof(block_t) / sizeof(unsigned long); w++) {
 		if (w % word_columns == 0) {
-			printf("%s ", block_marker);
-			if (print_word_numbers)
-				printf("%3d: ", w);
+			printf(block_format_default, block_marker, block->id, w);
 		}
 
 		printf("%016lx ", raw_block[w]);
