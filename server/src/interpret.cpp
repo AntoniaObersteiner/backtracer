@@ -7,6 +7,8 @@
 #include <format>
 #include <regex>
 
+#include "elfi.hpp"
+
 // TODO: eliminate code duplication with fiasco/src/jdb/jdb_btb.cpp?
 
 enum entry_types {
@@ -22,11 +24,12 @@ enum entry_types {
 // will have used this many uint64_t to descibe itself
 constexpr uint64_t words_per_entry_name = 2;
 
-void assert_attribute_name (const char * attribute_name) {
-	for (int j = 0; j < sizeof(uint64_t) * words_per_entry_name; j++) {
+void assert_attribute_name (const char * attribute_name, unsigned long size_in_words = 1) {
+	unsigned long string_length = sizeof(uint64_t) * words_per_entry_name * size_in_words;
+	for (int j = 0; j < string_length; j++) {
 		char c = attribute_name[j];
 		if ('a' <= c && c <= 'z' || c == '_' || '0' <= c && c <= '9') {
-			if (j == 15) {
+			if (j == string_length - 1) {
 				// not a '\0'?
 				throw std::runtime_error("attribute_name not 0-terminated!");
 			}
@@ -156,6 +159,9 @@ public:
 			std::string entry_name = entry_descriptor[offset];
 			self()[entry_name] = entry_descriptor.read_in(offset, buffer, length_in_words);
 		}
+		if (entry_type == BTE_MAPPING) {
+			add_mapping();
+		}
 		size_t payload_offset = offset;
 		payload.resize(length_in_words - entry_descriptor.size());
 		for (; offset < length_in_words; offset++) {
@@ -164,17 +170,122 @@ public:
 		printf("read entry: \n%s\n", to_string().c_str());
 	}
 
-	std::string to_string() const {
+	void add_mapping () const;
+	std::string get_symbol_name (unsigned long virtual_address) const;
+
+	std::string to_string () const {
 		std::string result;
 		for (const auto & [name, value] : self()) {
 			result += std::format("  {:16}: {:16x}\n", name, value);
 		}
 		for (size_t i = 0; i < payload.size(); i++) {
-			result += std::format("  {:15} : {:16x}\n", i, payload[i]);
+			if (self().at("entry_type") == BTE_STACK) {
+				std::string symbol_name = get_symbol_name(payload[i]);
+				result += std::format("  {:15} : {:16x} {}\n", i, payload[i], symbol_name);
+			} else {
+				result += std::format("  {:15} : {:16x}\n", i, payload[i]);
+			}
 		}
 		return result;
 	}
 };
+
+class Mapping {
+public:
+	const Entry & entry;
+	std::string name;
+	unsigned long base;
+	unsigned long size;
+	unsigned long task_id;
+
+	Mapping (const Entry & entry) : entry(entry) {
+		unsigned long name_array[4] = {
+			entry.at("mapping_name1"),
+			entry.at("mapping_name2"),
+			entry.at("mapping_name3"),
+			entry.at("mapping_name4")
+		};
+		char * name_chars = reinterpret_cast<char *>(&(name_array[0]));
+		assert_attribute_name(name_chars, 4 * 8);
+		name = std::string(name_chars);
+
+		base = entry.at("mapping_base");
+		size = entry.at("mapping_size");
+		task_id = entry.at("mapping_task_id");
+
+		std::cout
+			<< "Mapping of '" << name
+			<< "' base " << base
+			<< ", size " << size
+			<< ", task " << task_id
+			<< std::endl;
+	}
+
+	std::string lookup_symbol (ELFIO::elfio & reader, unsigned long virtual_address) {
+		return get_symbol(reader, virtual_address);
+	}
+};
+
+std::map<std::string, ELFIO::elfio> elfio_readers;
+
+class Mappings : public std::vector<Mapping> {
+public:
+	using Self = Mappings;
+	using Super = std::vector<Mapping>;
+	Self  & self  () { return *this; }
+	Super & super () { return dynamic_cast<Super &>(*this); }
+
+	Mappings () {}
+	std::map<std::pair<std::string, unsigned long>, Mapping *> by_task_and_binary;
+	std::map<unsigned long, std::vector<std::string>> binaries_by_task;
+
+	void emplace_back (const Entry & entry) {
+		super().emplace_back(entry);
+		Mapping & mapping = self().back();
+		by_task_and_binary[std::make_pair(mapping.name, mapping.task_id)] = &mapping;
+		binaries_by_task[mapping.task_id].emplace_back(mapping.name);
+	}
+
+	std::string lookup_symbol (unsigned long task_id, unsigned long virtual_address) {
+		std::string result = "";
+		std::string result_binary = "";
+		for (const auto & binary : binaries_by_task[task_id]) {
+			Mapping * mapping = by_task_and_binary[std::make_pair(binary, task_id)];
+			if (!mapping) {
+				throw std::runtime_error(
+					"mapping of '" + binary + "', task " + std::to_string(task_id) + " is invalid?"
+				);
+			}
+			ELFIO::elfio & reader = elfio_readers[binary];
+			std::string looked_up = mapping->lookup_symbol(reader, virtual_address);
+			if (looked_up.empty())
+				continue;
+
+			if (!result.empty()) {
+				throw std::runtime_error(std::format(
+					"both '{}' and '{}' map {:16x} ({} and {})",
+					result_binary, binary, virtual_address,
+					result, looked_up
+				));
+			}
+
+			result = looked_up;
+			result_binary = binary;
+		}
+		return result_binary + "/" + result;
+	}
+};
+
+static Mappings mappings;
+
+inline void Entry::add_mapping () const {
+	mappings.emplace_back(*this);
+}
+
+inline std::string Entry::get_symbol_name (unsigned long virtual_address) const {
+	unsigned long task_id = self().at("task_id");
+	return mappings.lookup_symbol(task_id, virtual_address);
+}
 
 class RawEntryArray : public std::vector<const uint64_t *> {
 	using Self = RawEntryArray;
@@ -227,8 +338,6 @@ public:
 };
 
 #define BUFFER_CAPACITY_IN_WORDS (1 << 16)
-
-#include "elfi.hpp"
 
 class BinariesList : public std::map<std::string, std::string> {
 public:
@@ -293,7 +402,6 @@ int main(int argc, char * argv []) {
 	std::string binaries_list_filename = "./binaries.list";
 	BinariesList binaries_list { binaries_list_filename };
 
-	std::map<std::string, ELFIO::elfio> elfio_readers;
 	for (const auto &[name, path] : binaries_list) {
 		std::cout << "binary '" << name << "' at path '" << path << "'" << std::endl;
 		elfio_readers[name] = get_elfio_reader(path);

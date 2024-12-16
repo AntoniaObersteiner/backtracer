@@ -2,6 +2,7 @@
 #include <format>
 #include <elfio/elfio.hpp>
 #include <elfio/elfio_dump.hpp>
+#include <cxxabi.h>  // needed for abi::__cxa_demangle
 
 inline const char * get_section_type_name (ELFIO::Elf_Word section_type) {
 	using namespace ELFIO;
@@ -38,30 +39,34 @@ inline ELFIO::elfio get_elfio_reader (const std::string& filename) {
 	return reader;
 }
 
+inline std::string demangle (const std::string & mangled) {
+	int status;
+    char *ret = abi::__cxa_demangle(mangled.c_str(), 0 /* output buffer */, 0 /* length */, &status);
+	if (status) {
+		 // throw std::runtime_error(
+			 // "demangling '" + mangled + "' failed with status " + std::to_string(status)
+		 // );
+		 // if we can't demangle it, it's probably C.
+		 if (ret)
+			 free(ret);
+		 return mangled;
+	}
+	std::string result { ret };
+	free((void *) ret);
+	return result;
+}
 inline const std::string get_symbol (ELFIO::elfio & reader, unsigned long instruction_pointer) {
 	using namespace ELFIO;
 
 	// Print ELF file sections info
 	Elf_Half sec_num = reader.sections.size();
-	std::cout << "Number of sections: " << sec_num << std::endl;
-	std::cout << " [sc] label               size type" << std::endl;
 	for (int i = 0; i < sec_num; ++i) {
 		section* psec = reader.sections[i];
-		std::cout << std::format(
-			" [{:2}] {:15} {:8} {:20}",
-			i, psec->get_name(),
-			psec->get_size(),
-			get_section_type_name(psec->get_type())
-		) << std::endl;
 		// Access section's data
 		const char* p = reader.sections[i]->get_data();
 
 		if (psec->get_type() == SHT_SYMTAB) {
 			const symbol_section_accessor symbols(reader, psec);
-			std::cout << std::format(
-				"   [{:2}] {:30} {:16} {:16} {} {} {:16} {}",
-				"sb", "name", "value", "size", "bind", "type", "section_index", "other"
-			) << std::endl;
 			for (unsigned int j = 0; j < symbols.get_symbols_num(); ++j) {
 				std::string name;
 				Elf64_Addr value;
@@ -75,17 +80,31 @@ inline const std::string get_symbol (ELFIO::elfio & reader, unsigned long instru
 					type, section_index, other
 				);
 				if (value <= instruction_pointer && instruction_pointer < value + size) {
+					std::cout << "Number of sections: " << sec_num << std::endl;
+					std::cout << " [sc] label               size type" << std::endl;
+					std::cout << std::format(
+						" [{:2}] {:15} {:8} {:20}",
+						i, psec->get_name(),
+						psec->get_size(),
+						get_section_type_name(psec->get_type())
+					) << std::endl;
+					std::cout << std::format(
+						"   [{:2}] {:30} {:16} {:16} {} {} {:16} {}",
+						"sb", "name", "value", "size", "bind", "type", "section_index", "other"
+					) << std::endl;
 					std::cout << std::format(
 						"   [{:2}] {:30} {:16x} {:16x} {} {} {:16x} {}",
 						j, name, value, size, bind, type, section_index, other
 					) << std::endl;
-					return name;
+					return demangle(name);
 				} else {
 					continue;
 				}
 			}
 		}
 	}
+
+	return "";
 }
 
 inline int elfi_test(std::string filename) {
