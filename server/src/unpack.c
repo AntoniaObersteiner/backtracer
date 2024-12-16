@@ -16,7 +16,8 @@ unsigned long get_block_line (
 	const char * block_marker
 ) {
 	unsigned long line_buffer_capacity = 1023; // +1 for '\0'
-	long line_buffer_filled = 0; // +1 for '\0'
+	long line_buffer_filled = 0;
+
 	// is allocated once, reallocated when needed by getline, freed never
 	static char * line_buffer;
 	static bool line_buffer_initialized = false;
@@ -65,27 +66,23 @@ bool is_hex(char c) {
 }
 bool from_hex(unsigned long * result, char source) {
 	char value;
-	if      ('0' <= source && source <= '9') {
-		value = source - '0';
-	} else if ('a' <= source && source <= 'f') {
-		value = source - 'a' + 10;
-	} else {
-		return false;
-	}
+	if        ('0' <= source && source <= '9') {  value = source - '0';
+	} else if ('a' <= source && source <= 'f') {  value = source - 'a' + 10;
+	} else return false;
 
 	(*result) = ((*result) << 4) | value;
 	return true;
 }
 
-bool to_mword(const char * buffer, unsigned long * result, unsigned long * to_skip) {
+bool to_mword(const char * buffer, unsigned long * result, unsigned long * to_skip, unsigned long read_chars) {
 	*result = 0;
-	for (unsigned long i = 0; i < 16; i++) {
+	for (unsigned long i = 0; i < read_chars; i++) {
 		if (!from_hex(result, buffer[i])) {
 			*to_skip = i + 1; // where to try again
 			return false;
 		}
 	}
-	*to_skip = 16;
+	*to_skip = read_chars
 	return true;
 }
 
@@ -109,7 +106,8 @@ void add_to_raw_block_data(
 		bool got_word = to_mword(
 			line_buffer + i,
 			block_buffer + *block_buffer_filled,
-			&to_skip
+			&to_skip,
+			16
 		);
 		if (got_word) {
 			if (0) printf(
