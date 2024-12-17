@@ -82,7 +82,7 @@ bool to_mword(const char * buffer, unsigned long * result, unsigned long * to_sk
 			return false;
 		}
 	}
-	*to_skip = read_chars
+	*to_skip = read_chars;
 	return true;
 }
 
@@ -92,16 +92,57 @@ void add_to_raw_block_data(
 	const char * line_buffer,
 	const unsigned long line_buffer_filled
 ) {
-	unsigned long start_index = 0;
+	// lines look like this (parentheses not literal): "(marker) [(block id):(word)] (data) (data) ..."
+	unsigned long   data_start_index = 0;
+	unsigned long     id_start_index = 0;
+	unsigned long offset_start_index = 0;
 	for (unsigned long i = 0; i < line_buffer_filled; i++) {
-		if (line_buffer[i] == ':') {
-			start_index = i + 1;
+		if (line_buffer[i] == '[') {
+			// spaces after this will abort
+			id_start_index = i + 1;
+		}
+		if (line_buffer[i] == '.') {
+			// spaces after this will abort
+			offset_start_index = i + 1;
+		}
+		if (line_buffer[i] == ']') {
+			// non-number characters after this are not a problem, because the reader repeats with skip.
+			data_start_index = i + 1;
 			break;
 		}
 	}
 
-	unsigned long i = start_index;
 	unsigned long to_skip;
+
+	{
+		unsigned long id;
+		if (!to_mword(line_buffer + id_start_index, &id, &to_skip, block_format_id_chars)) {
+			printf("could not read id in line markers starting at %ld in '%s'!\n", id_start_index, line_buffer);
+			exit(1);
+		}
+		if (*block_buffer_filled > 0) {
+			// otherwise, the block_t block_buffer has not read an id yet to compare
+			block_t * block = (block_t *) block_buffer;
+			if (block->id != id) {
+				printf("have block with id in data %ld, but id in line markers %ld!\n", block->id, id);
+				exit(1);
+			}
+		}
+	}
+
+	{
+		unsigned long offset;
+		if (!to_mword(line_buffer + offset_start_index, &offset, &to_skip, block_format_offset_chars)) {
+			printf("could not read offset in line markers starting at %ld in '%s'!\n", offset_start_index, line_buffer);
+			exit(1);
+		}
+		if (*block_buffer_filled != offset) {
+			printf("have offset in block %ld, but offset in line markers %ld!\n", *block_buffer_filled, offset);
+			exit(1);
+		}
+	}
+
+	unsigned long i = data_start_index;
 	for (; i < line_buffer_filled - 16; ) {
 		bool got_word = to_mword(
 			line_buffer + i,
@@ -122,120 +163,129 @@ void add_to_raw_block_data(
 	}
 }
 
+block_t * get_free_block(
+	block_t * blocks,
+	bool * block_used,
+	unsigned long block_array_capacity
+) {
+	for (unsigned long b = 0; b < block_array_capacity; b++) {
+		if (!block_used[b])
+			return blocks + b;
+	}
+
+	return 0;
+}
+
 void recover_block(
 	block_t * blocks,
+	bool * block_used,
+	unsigned long block_array_capacity,
 	const block_t ** reorder,
+	unsigned long reorder_capacity,
 	const block_t * redundancy_block,
-	unsigned long block_array_filled
+	unsigned long block_id_start
 ) {
-	block_t * recovered_block = &(blocks[block_array_filled]);
+	block_t * recovered_block = get_free_block(blocks, block_used, block_array_capacity);
+	if (!recovered_block) {
+		printf("there is no capacity for the missing block to be recovered!\n");
+		exit(1);
+	}
 	recovered_block->id = -1; // start with invalid id
 	for (unsigned long d = 0; d < block_data_capacity_in_words; d++) {
 		recovered_block->data[d] = 0;
 	}
-	for (unsigned long b = 0; b < block_array_filled; b++) {
-		if (reorder[b]) {
+	for (unsigned long r = 0; r < reorder_capacity; r++) {
+		unsigned long id = r + block_id_start;
+		if (reorder[r]) {
 			printf (
 				"recovered_block: id %016lx, len %016lx, flags %016lx, data:\n"
-				"%016lx %016lx %016lx %016lx\n"
-				"%016lx %016lx %016lx %016lx\n",
-				recovered_block->id,
-				recovered_block->data_length_in_words,
-				recovered_block->flags,
-				recovered_block->data[0],
-				recovered_block->data[1],
-				recovered_block->data[2],
-				recovered_block->data[3],
-				recovered_block->data[4],
-				recovered_block->data[5],
-				recovered_block->data[6],
-				recovered_block->data[7]
+				"%016lx %016lx %016lx %016lx\n%016lx %016lx %016lx %016lx\n",
+				recovered_block->id, recovered_block->data_length_in_words, recovered_block->flags,
+				recovered_block->data[0], recovered_block->data[1], recovered_block->data[2], recovered_block->data[3],
+				recovered_block->data[4], recovered_block->data[5], recovered_block->data[6], recovered_block->data[7]
 			);
-			xor_blocks(recovered_block, reorder[b]);
-		} else {
-			if (recovered_block->id == -1) {
-				printf(
-					"recovering block (id = %ld, idx = %ld) from %ld blocks\n",
-					b, block_array_filled, block_array_filled
-				);
-				recovered_block->id = b;
-				reorder[b] = recovered_block;
-				recovered_block->data_length_in_words = block_data_capacity_in_words; // free guess. TODO?
-			} else {
-				printf("found missing block %ld, but %ld was previously found?\n", b, recovered_block->id);
-				exit(1);
-			}
+			xor_blocks(recovered_block, reorder[r]);
+			continue;
 		}
+		if (recovered_block->id != -1) {
+			printf(
+				"found block (r = %ld, id = %ld) missing, "
+				"but id = %ld was already missing?\n",
+				r, id, recovered_block->id
+			);
+			exit(1);
+		}
+
+		printf(
+			"recovering block (r = %ld, id = %ld, idx = %ld)\n",
+			r, id, recovered_block - blocks
+		);
+		recovered_block->id = id;
+		reorder[r] = recovered_block;
+		recovered_block->data_length_in_words = block_data_capacity_in_words;
+		// free guess. TODO?
+		// maybe some 0-detection for the end of the block?
+		// or smart reading of content...
 	}
 	printf (
 		"recovered_block: id %016lx, len %016lx, flags %016lx, data:\n"
-		"%016lx %016lx %016lx %016lx\n"
-		"%016lx %016lx %016lx %016lx\n",
-		recovered_block->id,
-		recovered_block->data_length_in_words,
-		recovered_block->flags,
-		recovered_block->data[0],
-		recovered_block->data[1],
-		recovered_block->data[2],
-		recovered_block->data[3],
-		recovered_block->data[4],
-		recovered_block->data[5],
-		recovered_block->data[6],
-		recovered_block->data[7]
+		"%016lx %016lx %016lx %016lx\n%016lx %016lx %016lx %016lx\n",
+		recovered_block->id, recovered_block->data_length_in_words, recovered_block->flags,
+		recovered_block->data[0], recovered_block->data[1], recovered_block->data[2], recovered_block->data[3],
+		recovered_block->data[4], recovered_block->data[5], recovered_block->data[6], recovered_block->data[7]
 	);
 	xor_blocks(recovered_block, redundancy_block);
 	printf (
 		"recovered_block: id %016lx, len %016lx, flags %016lx, data:\n"
-		"%016lx %016lx %016lx %016lx\n"
-		"%016lx %016lx %016lx %016lx\n",
-		recovered_block->id,
-		recovered_block->data_length_in_words,
-		recovered_block->flags,
-		recovered_block->data[0],
-		recovered_block->data[1],
-		recovered_block->data[2],
-		recovered_block->data[3],
-		recovered_block->data[4],
-		recovered_block->data[5],
-		recovered_block->data[6],
-		recovered_block->data[7]
+		"%016lx %016lx %016lx %016lx\n%016lx %016lx %016lx %016lx\n",
+		recovered_block->id, recovered_block->data_length_in_words, recovered_block->flags,
+		recovered_block->data[0], recovered_block->data[1], recovered_block->data[2], recovered_block->data[3],
+		recovered_block->data[4], recovered_block->data[5], recovered_block->data[6], recovered_block->data[7]
 	);
 }
 
-// returns new length of blocks and reorder (reorder will be nullptr on last entry because of redundancy block)
 unsigned long make_reorder(
-	const block_t ** reorder,
+	const block_t *** reorder,
+	unsigned long * reorder_capacity,
 	block_t * blocks,
-	unsigned long block_array_filled,
+	bool * block_used,
+	unsigned long block_array_capacity,
 	unsigned long block_id_start
 ) {
 	unsigned long max_id = 0;
-	for (unsigned long b = 0; b < block_array_filled; b++) {
+	unsigned long block_use_count = 0;
+	for (unsigned long b = 0; b < block_array_capacity; b++) {
+		if (!block_used[b])
+			continue;
+
+		block_use_count++;
 		if (blocks[b].id > max_id) {
 			max_id = blocks[b].id;
 		}
 	}
-	printf("max_id %ld from %ld read blocks\n", max_id, block_array_filled);
 	unsigned long rel_max_id = max_id - block_id_start;
-	if (rel_max_id > BLOCK_ARRAY_CAPACITY) {
-		printf(
-			"we have max block id %ld (section start at %ld), but only %d capacity!\n",
-			max_id, block_id_start, BLOCK_ARRAY_CAPACITY
-		);
-	}
-	unsigned long missing = rel_max_id - block_array_filled + 2;
-	printf("%ld blocks missing: %ld - %ld!\n", missing, block_array_filled, rel_max_id);
+	unsigned long reorder_capacity_needed = rel_max_id + 1;
 
-	if (missing > 1) {
-		printf("there are %ld blocks missing. that is beyond the error correction implemented!\n", missing);
-		exit(1);
+	printf("max_id %ld among %ld blocks, %ld read blocks\n", max_id, reorder_capacity_needed, block_use_count);
+	if (reorder_capacity_needed > *reorder_capacity) {
+		*reorder = (const block_t **) realloc((void *) reorder, reorder_capacity_needed * sizeof(block_t *));
+		*reorder_capacity = reorder_capacity_needed;
+		if (!*reorder) {
+			perror("realloc reorder");
+			exit(1);
+		}
+	}
+
+	for (unsigned long r = 0; r <= rel_max_id; r++) {
+		(*reorder)[r] = 0;
 	}
 
 	block_t * redundancy_block = 0;
-	for (unsigned long b = 0; b < rel_max_id; b++) {
-		reorder[b] = 0;
-	}
-	for (unsigned long b = 0; b < block_array_filled; b++) {
+	unsigned long missing = reorder_capacity_needed; // -- for each found block
+	for (unsigned long b = 0; b < block_array_capacity; b++) {
+		if (!block_used[b])
+			continue;
+
 		unsigned long id = blocks[b].id;
 		if (id < block_id_start) {
 			printf(
@@ -252,23 +302,46 @@ unsigned long make_reorder(
 			continue;
 		}
 
-		reorder[id - block_id_start] = &(blocks[b]);
+		if ((*reorder)[id - block_id_start]) {
+			printf(
+				"error: non-redundancy block (id = %ld, idx = %ld) has same id as previous block (idx = %ld)\n",
+				id, b, (*reorder)[id - block_id_start] - blocks
+			);
+			continue;
+		}
+
+		missing--;
+		(*reorder)[id - block_id_start] = &(blocks[b]);
 		printf("reorder id %ld -> idx %ld\n", id, b);
 	}
 
-	if (missing == 1) {
-		if (rel_max_id == BLOCK_ARRAY_CAPACITY) {
-			printf("there is no capacity for the missing block to be recovered!\n");
-			exit(1);
-		}
-		if (!redundancy_block) {
-			printf("we want to recover, but the redundancy block is not in the blocks?\n");
-			exit(1);
-		}
-		recover_block(blocks, reorder, redundancy_block, block_array_filled);
-		block_array_filled++;
+	printf(
+		"%ld blocks missing from section of %ld blocks among %ld noted blocks "
+		"(the latter including the redundancy block)!\n",
+		missing, reorder_capacity_needed, block_use_count
+	);
+
+	if (missing > 1) {
+		printf("there are %ld blocks missing. that is beyond the error correction implemented!\n", missing);
+		exit(1);
 	}
-	return block_array_filled;
+
+	if (missing == 1) {
+		if (!redundancy_block) {
+			printf("we want to recover, but have no redundancy block?\n");
+			exit(1);
+		}
+		recover_block(
+			blocks, block_used, block_array_capacity,
+			*reorder, *reorder_capacity,
+			redundancy_block, block_id_start
+		);
+		block_use_count++;
+	}
+
+	block_used[redundancy_block - blocks] = false;
+
+	return reorder_capacity_needed;
 }
 
 void write_block_data(
@@ -276,33 +349,35 @@ void write_block_data(
 	const block_t ** blocks,
 	unsigned long blocks_filled
 ) {
-	for (unsigned long b = 0; b < blocks_filled; b++) {
-		if (!blocks[b]) {
-			printf("cannot write missing block %ld!\n", b);
+	for (unsigned long r = 0; r < blocks_filled; r++) {
+		if (!blocks[r]) {
+			printf("cannot write missing block %ld!\n", r);
 			continue;
 		}
 
-		printf("writing block %ld: %p (%ld words) to output\n", b, blocks[b], blocks[b]->data_length_in_words);
-		for (unsigned long i = 0; i < blocks[b]->data_length_in_words; i += 4) {
+		printf("writing block %ld: %p (%ld words) to output\n", r, blocks[r], blocks[r]->data_length_in_words);
+		for (unsigned long i = 0; i < blocks[r]->data_length_in_words; i += 4) {
 			printf(
 				"words at %p: %016lx %016lx %016lx %016lx\n",
-				&(blocks[b]->data[i]),
-				blocks[b]->data[i + 0],
-				blocks[b]->data[i + 1],
-				blocks[b]->data[i + 2],
-				blocks[b]->data[i + 3]
+				&(blocks[r]->data[i]),
+				blocks[r]->data[i + 0],
+				blocks[r]->data[i + 1],
+				blocks[r]->data[i + 2],
+				blocks[r]->data[i + 3]
 			);
 		}
 		unsigned int output_written = fwrite(
-			blocks[b]->data,
+			blocks[r]->data,
 			sizeof(unsigned long),
-			blocks[b]->data_length_in_words,
+			blocks[r]->data_length_in_words,
 			output_file
 		);
 		if (!output_written) {
 			if (ferror(output_file)) {
 				perror("writing block to output_file");
 				exit(1);
+			} else {
+				perror("no output written to output_file?");
 			}
 		}
 	}
@@ -324,7 +399,9 @@ int main(int argc, char * argv []) {
 	int input_fd, output_fd;
 	bool close_input_fd_at_end = false;
 	bool close_output_fd_at_end = false;
-	if (strcmp(input_filename, "-") != 0) {
+	if (strcmp(input_filename, "-") == 0) {
+		input_fd = STDIN_FILENO;
+	} else {
 		input_fd = open(input_filename, O_RDONLY);
 		printf("input_fd: %d\n", input_fd);
 		if (input_fd < 0) {
@@ -332,11 +409,15 @@ int main(int argc, char * argv []) {
 			exit(1);
 		}
 		close_input_fd_at_end = true;
-	} else {
-		input_fd = STDIN_FILENO;
 	}
 
-	if (strcmp(output_filename, "-") != 0) {
+	if (strcmp(output_filename, "-") == 0) {
+		printf(
+			"the programm will not vomit raw bytes to stdout. "
+			"please provide a real filename!\n"
+		);
+		exit(1);
+	} else {
 		output_fd = open(
 			output_filename,
 			O_WRONLY |
@@ -344,7 +425,7 @@ int main(int argc, char * argv []) {
 			S_IRUSR |
 			S_IWUSR |
 			S_IRGRP |
-			S_IRGRP |
+			S_IWGRP |
 			S_IROTH
 		);
 		printf("output_fd: %d\n", output_fd);
@@ -353,12 +434,6 @@ int main(int argc, char * argv []) {
 			exit(1);
 		}
 		close_output_fd_at_end = true;
-	} else {
-		printf(
-			"the programm will not vomit raw bytes to stdout. "
-			"please provide a real filename!\n"
-		);
-		exit(1);
 	}
 
 	FILE * input_file = fdopen(input_fd, "r");
@@ -370,18 +445,21 @@ int main(int argc, char * argv []) {
 
 	const unsigned long block_array_capacity = BLOCK_ARRAY_CAPACITY;
 	block_t blocks [BLOCK_ARRAY_CAPACITY];
-	unsigned long block_array_filled = 0;
+	bool block_used [BLOCK_ARRAY_CAPACITY] = { false };
 
-	unsigned long * block_raw = (unsigned long *) &(blocks[0]);
+	block_t * current_block = &blocks[0];
 	// how many words do we already have towards the next block
 	unsigned long block_buffer_filled = 0;
 
-	// maps block ids starting from reorder_block_id_start to their blocks.
+	// maps block ids starting from block_id_start to their blocks.
 	// null entries mark missing blocks
 	unsigned long reorder_block_id_start;
-	const block_t * reorder [BLOCK_ARRAY_CAPACITY];
+	// make_reorder will realloc and change this value
+	unsigned long reorder_capacity = BLOCK_ARRAY_CAPACITY;
+	const block_t ** reorder = (const block_t **) malloc(sizeof(const block_t *) * reorder_capacity);
 
 	while (true) {
+		// find a line with the specified marker in the input. replace \n by \0
 		line_buffer_filled = get_block_line(
 			&line_buffer,
 			input_file,
@@ -395,38 +473,47 @@ int main(int argc, char * argv []) {
 			break;
 
 		add_to_raw_block_data(
-			block_raw,
+			(unsigned long *) current_block,
 			&block_buffer_filled,
 			line_buffer,
 			line_buffer_filled
 		);
 
-		if (block_buffer_filled == sizeof(block_t) / sizeof(unsigned long)) {
-			printf(
-				"filled block idx = %ld, id = %ld (@%p) with %ld words\n",
-				block_array_filled, blocks[block_array_filled].id, block_raw, block_buffer_filled
-			);
-			block_array_filled ++;
-			block_raw = (unsigned long *) &(blocks[block_array_filled]);
-			block_buffer_filled = 0;
-		}
+		if (block_buffer_filled < sizeof(block_t) / sizeof(unsigned long))
+			continue;
+
+		unsigned long block_index = current_block - &blocks[0];
+		printf(
+			"filled block idx = %ld, id = %ld (@%p) with %ld words\n",
+			block_index, blocks[block_index].id, current_block, block_buffer_filled
+		);
+		block_used[block_index] = true;
 
 		// the block we just completed
-		block_t * block = &blocks[block_array_filled - 1];
-		if (!(block->flags & BLOCK_REDUNDANCY)) {
+		block_t * block = current_block;
+		current_block = get_free_block(blocks, block_used, block_array_capacity);
+		block_buffer_filled = 0;
+
+		if (!(block->flags & BLOCK_REDUNDANCY))
 			// get next block, we are not at the checking stage yet.
 			continue;
-		}
 
 		// the redundancy block has the index of the first block its redundancy covers
 		long block_id_start = block->id;
-		block_array_filled = make_reorder(reorder, blocks, block_array_filled, block_id_start);
+		unsigned long reorder_filled = make_reorder(
+			&reorder, &reorder_capacity,
+			blocks, block_used, block_array_capacity,
+			block_id_start
+		);
 
 		printf("write blocks\n");
-		write_block_data(output_file, reorder, block_array_filled - 1);
+		write_block_data(output_file, reorder, reorder_filled);
+
+		for (unsigned long r = 0; r < reorder_filled; r++) {
+			unsigned long index = reorder[r] - &blocks[0];
+			block_used[index] = false;
+		}
 		printf("done\n");
-		block_array_filled = 0;
-		block_buffer_filled = 0;
 	}
 
 	// the check is for stdin, this code is not correct, but we don't need it anymore anyways...

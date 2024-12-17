@@ -79,6 +79,8 @@ void xor_blocks(block_t * target, const block_t * to_add) {
 }
 
 // block marker[block id/word offset]
+const unsigned long block_format_id_chars = 8;
+const unsigned long block_format_offset_chars = 2;
 const char * const block_format_default = "%s [%08lx.%02x] ";
 const char * const block_marker_default = ">=<";
 

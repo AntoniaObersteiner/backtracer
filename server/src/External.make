@@ -10,6 +10,7 @@ CXXHEADERS=\
 SAMPLE=../../../../../docker_log/good_sample
 SAMPLE=../../../../../docker_log/full_sample
 SAMPLE=../../../../../docker_log/long_sample
+SAMPLE=../../../../../docker_log/fresh_giant
 OUTPUT=example.btb
 BINARY_DIR=../../../../../__build__/amd64/l4/bin/amd64_gen/l4f/.debug
 BINARY_LIST=binaries.list
