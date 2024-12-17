@@ -145,10 +145,10 @@ public:
 		entry_types entry_type = static_cast<entry_types>(*buffer);
 
 		if (!entry_descriptor_map.contains(entry_type)) {
-			throw std::runtime_error (
-				"entry_type " + std::to_string(entry_type)
-				+ " has no attribute descriptors yet!\n"
-			);
+			throw std::runtime_error(std::format(
+				"entry_type {:2x} has no attribute descriptors yet!",
+				static_cast<unsigned long>(entry_type)
+			));
 		}
 
 		const EntryDescriptor & entry_descriptor = entry_descriptor_map.at(entry_type);
@@ -356,6 +356,20 @@ public:
 		for (size_t i = 0; i < raw_entry_array.size(); i++) {
 			const uint64_t * const type_ptr = raw_entry_array[i];
 			const size_t entry_length = reinterpret_cast<size_t>(*(type_ptr + 1));
+			if (i + 1 < raw_entry_array.size()) printf(
+				"reading from %p, word %lx, byte %lx: typ = %lx, len = %lx "
+				"to %p, word %lx, byte %lx, word diff: %lx.\n",
+				type_ptr, type_ptr - raw_entry_array[0], (type_ptr - raw_entry_array[0]) * 8,
+				*type_ptr, entry_length,
+				raw_entry_array[i + 1], raw_entry_array[i + 1] - raw_entry_array[0],
+				(raw_entry_array[i + 1] - raw_entry_array[0]) * 8,
+				raw_entry_array[i + 1] - type_ptr
+			); else printf(
+				"reading from %p, word %lx, byte %lx: typ = %lx, len = %lx\n",
+				type_ptr, type_ptr - raw_entry_array[0], (type_ptr - raw_entry_array[0]) * 8,
+				*type_ptr, entry_length
+			);
+			fflush(stdout);
 			if (*type_ptr != BTE_INFO) {
 				self().emplace_back(raw_entry_array[i], entry_length, *entry_descriptor_map);
 			}

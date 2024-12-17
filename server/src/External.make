@@ -1,3 +1,4 @@
+SHELL=bash
 
 CFLAGS= --max-errors=3 -ggdb
 CXXFLAGS= --max-errors=3 -ggdb --std=c++20 -I../../../../../ELFIO
@@ -11,7 +12,8 @@ SAMPLE=../../../../../docker_log/good_sample
 SAMPLE=../../../../../docker_log/full_sample
 SAMPLE=../../../../../docker_log/long_sample
 SAMPLE=../../../../../docker_log/fresh_giant
-OUTPUT=example.btb
+BUFFER=example.btb
+OUTPUT=example.traces
 BINARY_DIR=../../../../../__build__/amd64/l4/bin/amd64_gen/l4f/.debug
 BINARY_LIST=binaries.list
 
@@ -26,8 +28,8 @@ $(SAMPLE).cleaned: $(SAMPLE)
 
 .PHONY: run
 run: unpack $(SAMPLE).cleaned interpret $(BINARY_LIST)
-	./unpack $(SAMPLE).cleaned $(OUTPUT)
-	./interpret $(OUTPUT)
+	./unpack $(SAMPLE).cleaned $(BUFFER)
+	./interpret $(BUFFER) |& tee $(OUTPUT)
 
 .PHONY: gdb
 gdb: unpack
@@ -39,4 +41,4 @@ gdb_interpret: interpret
 
 .PHONY: clean
 clean:
-	rm -f $(OUTPUT) ./stderr ./stdout ./unpack ./interpret
+	rm -f $(BUFFER) ./stderr ./stdout ./unpack ./interpret

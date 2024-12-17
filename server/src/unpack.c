@@ -489,6 +489,15 @@ int main(int argc, char * argv []) {
 		);
 		block_used[block_index] = true;
 
+		for (
+			unsigned long d = block_buffer_filled -
+				(sizeof(block_t) / sizeof(unsigned long) - block_data_capacity_in_words);
+			d < block_data_capacity_in_words;
+			d++
+		) {
+			current_block->data[d] = 0;
+		}
+
 		// the block we just completed
 		block_t * block = current_block;
 		current_block = get_free_block(blocks, block_used, block_array_capacity);
