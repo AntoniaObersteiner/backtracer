@@ -227,7 +227,7 @@ public:
 	}
 
 	std::string lookup_symbol (ELFIO::elfio & reader, unsigned long virtual_address) {
-		return get_symbol(reader, virtual_address);
+		return get_symbol(reader, virtual_address - base);
 	}
 };
 
@@ -356,6 +356,7 @@ public:
 		for (size_t i = 0; i < raw_entry_array.size(); i++) {
 			const uint64_t * const type_ptr = raw_entry_array[i];
 			const size_t entry_length = reinterpret_cast<size_t>(*(type_ptr + 1));
+			#if 0
 			if (i + 1 < raw_entry_array.size()) printf(
 				"reading from %p, word %lx, byte %lx: typ = %lx, len = %lx "
 				"to %p, word %lx, byte %lx, word diff: %lx.\n",
@@ -369,6 +370,7 @@ public:
 				type_ptr, type_ptr - raw_entry_array[0], (type_ptr - raw_entry_array[0]) * 8,
 				*type_ptr, entry_length
 			);
+			#endif
 			fflush(stdout);
 			if (*type_ptr != BTE_INFO) {
 				self().emplace_back(raw_entry_array[i], entry_length, *entry_descriptor_map);
@@ -443,7 +445,6 @@ int main(int argc, char * argv []) {
 	BinariesList binaries_list { binaries_list_filename };
 
 	for (const auto &[name, path] : binaries_list) {
-		std::cout << "binary '" << name << "' at path '" << path << "'" << std::endl;
 		elfio_readers[name] = get_elfio_reader(path);
 		// elfi_test(path);
 	}
