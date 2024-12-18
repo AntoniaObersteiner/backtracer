@@ -31,6 +31,10 @@ run: unpack $(SAMPLE).cleaned interpret $(BINARY_LIST)
 	./unpack $(SAMPLE).cleaned $(BUFFER)
 	./interpret $(BUFFER) |& tee $(OUTPUT)
 
+.PHONY: sample_length
+sample_length:
+	./length_of_data.sh $(SAMPLE).cleaned
+
 .PHONY: gdb
 gdb: unpack
 	gdb -tui --command=test.gdb ./unpack
@@ -41,4 +45,4 @@ gdb_interpret: interpret
 
 .PHONY: clean
 clean:
-	rm -f $(BUFFER) ./stderr ./stdout ./unpack ./interpret
+	rm -f $(BUFFER) ./stderr ./stdout ./unpack ./interpret $(OUTPUT)
