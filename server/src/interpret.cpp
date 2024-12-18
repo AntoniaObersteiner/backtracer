@@ -451,6 +451,46 @@ public:
 };
 const std::regex BinariesList::line_regex { "([^:]+): *([^ ]+)" };
 
+void mmap_file(
+	const std::string & filename,
+	uint64_t * &buffer,
+	size_t &buffer_size_in_words
+) {
+	printf("reading file '%s'\n", filename.c_str());
+
+	struct stat stat_buffer;
+	if (stat(filename.c_str(), &stat_buffer) != 0) {
+		perror(filename.c_str());
+		throw std::runtime_error("could not execute stat on '" + filename + "'!");
+	}
+	size_t buffer_size_in_bytes = stat_buffer.st_size;
+	if (buffer_size_in_bytes % sizeof(unsigned long)) {
+		throw std::runtime_error(
+			"file '" + filename + "' is " + std::to_string(buffer_size_in_bytes)
+			+ " long, which is not a whole number of words ("
+			+ std::to_string(sizeof(unsigned long)) + " bytes / word)!"
+		);
+	}
+	buffer_size_in_words = buffer_size_in_bytes / sizeof(unsigned long);
+
+	printf(
+		"file '%s' is %ld bytes, %ld words long.",
+		filename.c_str(), buffer_size_in_bytes, buffer_size_in_words
+	);
+
+	// only needed to create mmap mapping
+	int fd = open(filename.c_str(), O_RDONLY);
+	void * raw_buffer = mmap(0, buffer_size_in_bytes, PROT_READ, MAP_PRIVATE, fd, 0);
+	close(fd);
+
+	if (raw_buffer == reinterpret_cast<void *>(-1)) {
+		perror("mmap");
+		throw std::runtime_error("could not mmap '" + filename + "'!");
+	}
+
+	buffer = reinterpret_cast<uint64_t *>(raw_buffer);
+}
+
 int main(int argc, char * argv []) {
 	// TODO: use argp / similar
 
@@ -464,50 +504,14 @@ int main(int argc, char * argv []) {
 
 	std::cout << std::endl;
 
-
 	if (argc < 2) {
 		throw std::runtime_error("missing args: need input file (.btb)");
 	}
 
 	std::string filename { argv[1] };
-	printf("reading file '%s'\n", filename.c_str());
-
-	size_t buffer_size_in_bytes, buffer_size_in_words;
 	uint64_t * buffer;
-
-	{
-		struct stat stat_buffer;
-		if (stat(filename.c_str(), &stat_buffer) != 0) {
-			perror(filename.c_str());
-			throw std::runtime_error("could not execute stat on '" + filename + "'!");
-		}
-		buffer_size_in_bytes = stat_buffer.st_size;
-		if (buffer_size_in_bytes % sizeof(unsigned long)) {
-			throw std::runtime_error(
-				"file '" + filename + "' is " + std::to_string(buffer_size_in_bytes)
-				+ " long, which is not a whole number of words ("
-				+ std::to_string(sizeof(unsigned long)) + " bytes / word)!"
-			);
-		}
-		buffer_size_in_words = buffer_size_in_bytes / sizeof(unsigned long);
-
-		printf(
-			"file '%s' is %ld bytes, %ld words long.",
-			filename.c_str(), buffer_size_in_bytes, buffer_size_in_words
-		);
-
-		// only needed to create mmap mapping
-		int fd = open(filename.c_str(), O_RDONLY);
-		void * raw_buffer = mmap(0, buffer_size_in_bytes, PROT_READ, MAP_PRIVATE, fd, 0);
-		close(fd);
-
-		if (raw_buffer == reinterpret_cast<void *>(-1)) {
-			perror("mmap");
-			throw std::runtime_error("could not mmap '" + filename + "'!");
-		}
-
-		buffer = reinterpret_cast<uint64_t *>(raw_buffer);
-	}
+	size_t buffer_size_in_words;
+	mmap_file(filename, buffer, buffer_size_in_words);
 
 	EntryArray entry_array(RawEntryArray (buffer, buffer_size_in_words));
 
