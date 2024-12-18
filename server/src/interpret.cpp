@@ -27,12 +27,12 @@ enum entry_types {
 // will have used this many uint64_t to descibe itself
 constexpr uint64_t words_per_entry_name = 2;
 
-void assert_attribute_name (const char * attribute_name, unsigned long size_in_words = 1) {
+void assert_attribute_name (const char * attribute_name, unsigned long size_in_words = 1, bool assert_null_terminated = false) {
 	unsigned long string_length = sizeof(uint64_t) * words_per_entry_name * size_in_words;
 	for (int j = 0; j < string_length; j++) {
 		char c = attribute_name[j];
 		if ('a' <= c && c <= 'z' || c == '_' || '0' <= c && c <= '9') {
-			if (j == string_length - 1) {
+			if (assert_null_terminated && j == string_length - 1) {
 				// not a '\0'?
 				throw std::runtime_error("attribute_name not 0-terminated!");
 			}
@@ -61,8 +61,14 @@ public:
 		// one attribute_name is stored in several words
 		for (uint64_t index = 0; index < length_in_words / words_per_entry_name; index++) {
 			uint64_t offset = index * words_per_entry_name;
-			const char * attribute_name = reinterpret_cast<const char *>(buffer + offset);
-			// they should be 0-terminated (and 0-padded)
+			uint64_t attribute_name_numbers [words_per_entry_name + 1];
+			for (uint64_t n = 0; n < words_per_entry_name; n++) {
+				attribute_name_numbers[n] = buffer[offset + n];
+			}
+			// names must not be 0-terminated, so add that
+			attribute_name_numbers[words_per_entry_name] = 0;
+
+			const char * attribute_name = reinterpret_cast<const char *>(&attribute_name_numbers[0]);
 			assert_attribute_name(attribute_name);
 			std::string name { attribute_name };
 			self()[index] = name;
@@ -207,14 +213,18 @@ public:
 	unsigned long task_id;
 
 	Mapping (const Entry & entry) : entry(entry) {
-		unsigned long name_array[4] = {
+		// write these integers into the array as they are in the raw data
+		unsigned long name_array[5] = {
 			entry.at("mapping_name1"),
 			entry.at("mapping_name2"),
 			entry.at("mapping_name3"),
-			entry.at("mapping_name4")
+			entry.at("mapping_name4"),
+			0 // assert_attribute_name falsely assumes my char * is 0-terminated.
+			// actually, this is not guaranteed by the buffer protocol.
 		};
+		// read them as a character array
 		char * name_chars = reinterpret_cast<char *>(&(name_array[0]));
-		assert_attribute_name(name_chars, 4 * 8);
+		assert_attribute_name(name_chars, 4 * sizeof(unsigned long));
 		name = std::string(name_chars);
 
 		base = entry.at("mapping_base");
