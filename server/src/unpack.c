@@ -421,6 +421,7 @@ int main(int argc, char * argv []) {
 		output_fd = open(
 			output_filename,
 			O_WRONLY |
+			O_TRUNC |
 			O_CREAT,
 			S_IRUSR |
 			S_IWUSR |
