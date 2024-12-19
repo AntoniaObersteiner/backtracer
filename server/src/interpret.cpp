@@ -26,12 +26,15 @@ enum entry_types {
 // will have used this many uint64_t to descibe itself
 constexpr uint64_t words_per_entry_name = 2;
 
-void assert_attribute_name (const char * attribute_name, unsigned long size_in_words = 1, bool assert_null_terminated = false) {
-	unsigned long string_length = sizeof(uint64_t) * words_per_entry_name * size_in_words;
-	for (int j = 0; j < string_length; j++) {
+void assert_attribute_name (
+	const char * attribute_name,
+	unsigned long size_in_words = words_per_entry_name
+) {
+	unsigned long size_in_bytes = sizeof(uint64_t) * size_in_words;
+	for (int j = 0; j < size_in_bytes; j++) {
 		char c = attribute_name[j];
 		if ('a' <= c && c <= 'z' || c == '_' || '0' <= c && c <= '9') {
-			if (assert_null_terminated && j == string_length - 1) {
+			if (j == size_in_bytes - 1) {
 				// not a '\0'?
 				throw std::runtime_error("attribute_name not 0-terminated!");
 			}
@@ -137,6 +140,7 @@ class Entry : public std::map<std::string, uint64_t> {
 	using Self = Entry;
 	Self & self () { return *this; }
 	const Self & self () const { return *this; }
+	// must be a contiguous memory type
 	std::vector<uint64_t> payload;
 
 public:
@@ -177,6 +181,10 @@ public:
 		}
 	}
 
+	const unsigned long * get_payload_ptr () const {
+		return &payload[0];
+	}
+
 	void add_mapping () const;
 	std::string get_symbol_name (unsigned long virtual_address) const;
 	// return the binaries loaded by task with given id
@@ -195,6 +203,9 @@ public:
 			if (self().at("entry_type") == BTE_STACK) {
 				std::string symbol_name = get_symbol_name(payload[i]);
 				result += std::format("  {:15} : {:16x} {}\n", i, payload[i], symbol_name);
+			} else if (self().at("entry_type") == BTE_MAPPING) {
+				const char * name = reinterpret_cast<const char *>(&payload[i]);
+				result += std::format("  {:15} : {:16x} {:.8}\n", i, payload[i], name);
 			} else {
 				result += std::format("  {:15} : {:16x}\n", i, payload[i]);
 			}
@@ -212,28 +223,19 @@ public:
 	unsigned long task_id;
 
 	Mapping (const Entry & entry) : entry(entry) {
-		// write these integers into the array as they are in the raw data
-		unsigned long name_array[5] = {
-			entry.at("mapping_name1"),
-			entry.at("mapping_name2"),
-			entry.at("mapping_name3"),
-			entry.at("mapping_name4"),
-			0 // assert_attribute_name falsely assumes my char * is 0-terminated.
-			// actually, this is not guaranteed by the buffer protocol.
-		};
+		// read these integers as they are in the raw data
+		const unsigned long * name_array = entry.get_payload_ptr();
 		// read them as a character array
-		char * name_chars = reinterpret_cast<char *>(&(name_array[0]));
+		const char * name_chars = reinterpret_cast<const char *>(&(name_array[0]));
 		assert_attribute_name(name_chars, 4 * sizeof(unsigned long));
 		name = std::string(name_chars);
 
 		base = entry.at("mapping_base");
-		size = entry.at("mapping_size");
 		task_id = entry.at("mapping_task_id");
 
 		std::cout
 			<< "Mapping of '" << name
 			<< "' base " << base
-			<< ", size " << size
 			<< ", task " << task_id
 			<< std::endl;
 	}
