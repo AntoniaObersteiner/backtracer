@@ -10,6 +10,7 @@ HEADERS=\
 CXXHEADERS=\
 	elfi.hpp \
 
+SAMPLE_PATH=../../../../../docker_log
 SAMPLE=../../../../../docker_log/good_sample
 SAMPLE=../../../../../docker_log/full_sample
 SAMPLE=../../../../../docker_log/long_sample
@@ -25,11 +26,14 @@ interpret: interpret.cpp $(CXXHEADERS)
 $(BINARY_LIST): list_binaries.sh $(BINARY_DIR)
 	./list_binaries.sh $(BINARY_DIR) $(BINARY_LIST)
 
-$(SAMPLE).cleaned: $(SAMPLE)
-	cat -v $(SAMPLE) > $(SAMPLE).cleaned
+%.cleaned: %
+	cat -v $< > $@
 
-$(BUFFER): unpack $(SAMPLE).cleaned
-	./unpack $(SAMPLE).cleaned $(BUFFER)
+%.btb: $(SAMPLE_PATH)/%.cleaned unpack
+	./unpack $< $@
+
+%.traces: %.btb interpret
+	./interpret $< |& tee $@
 
 .PHONY: run
 run: ./interpret $(BUFFER)
