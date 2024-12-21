@@ -171,18 +171,18 @@ public:
 			std::string entry_name = entry_descriptor[offset];
 			self()[entry_name] = entry_descriptor.read_in(offset, buffer, length_in_words);
 		}
-		if (entry_type == BTE_MAPPING) {
-			add_mapping();
-		}
 		size_t payload_offset = offset;
 		payload.resize(length_in_words - entry_descriptor.size());
 		for (; offset < length_in_words; offset++) {
 			payload[offset - payload_offset] = buffer[offset];
 		}
+		if (entry_type == BTE_MAPPING) {
+			add_mapping();
+		}
 	}
 
 	const unsigned long * get_payload_ptr () const {
-		return &payload[0];
+		return payload.data();
 	}
 
 	void add_mapping () const;
@@ -335,6 +335,13 @@ public:
 	RawEntryArray (const uint64_t * const buffer, const size_t length_in_words) {
 		const uint64_t * current = buffer;
 		while (current - buffer + 4 < length_in_words) {
+			#if 1
+			printf(
+				"reading at offset %5ld words (%5ld bytes): type = %3ld, length = %3ld words\n",
+				current - buffer, (current - buffer) * sizeof(uint64_t),
+				*current, *(current + 1)
+			);
+			#endif
 			const size_t length = reinterpret_cast<size_t>(*(current + 1));
 			if (length == 0)
 				break;
@@ -475,7 +482,7 @@ void mmap_file(
 	buffer_size_in_words = buffer_size_in_bytes / sizeof(unsigned long);
 
 	printf(
-		"file '%s' is %ld bytes, %ld words long.",
+		"file '%s' is %ld bytes, %ld words long.\n",
 		filename.c_str(), buffer_size_in_bytes, buffer_size_in_words
 	);
 
@@ -513,6 +520,7 @@ int main(int argc, char * argv []) {
 	uint64_t * buffer;
 	size_t buffer_size_in_words;
 	mmap_file(filename, buffer, buffer_size_in_words);
+	printf("buffer: %p\n", buffer);
 
 	EntryArray entry_array(RawEntryArray (buffer, buffer_size_in_words));
 
