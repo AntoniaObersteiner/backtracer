@@ -1,5 +1,5 @@
-example.btb
-example.traces
+*.btb
+*.traces
 stderr
 stdout
 unpack
