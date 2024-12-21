@@ -28,9 +28,11 @@ $(BINARY_LIST): list_binaries.sh $(BINARY_DIR)
 $(SAMPLE).cleaned: $(SAMPLE)
 	cat -v $(SAMPLE) > $(SAMPLE).cleaned
 
-.PHONY: run
-run: unpack $(SAMPLE).cleaned interpret $(BINARY_LIST)
+$(BUFFER): unpack $(SAMPLE).cleaned
 	./unpack $(SAMPLE).cleaned $(BUFFER)
+
+.PHONY: run
+run: ./interpret $(BUFFER)
 	./interpret $(BUFFER) |& tee $(OUTPUT)
 
 .PHONY: sample_length
