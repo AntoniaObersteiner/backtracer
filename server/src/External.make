@@ -53,4 +53,4 @@ gdb_interpret: interpret
 
 .PHONY: clean
 clean:
-	rm -f $(BUFFER) ./stderr ./stdout ./unpack ./interpret $(OUTPUT)
+	rm -f *.btb ./stderr ./stdout ./unpack ./interpret *.traces
