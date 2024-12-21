@@ -26,3 +26,5 @@ for f in $(ls $path); do
 		fi
 	fi
 done
+
+echo "KERNEL: __build__/amd64/fiasco/fiasco.dbg" >> $output_file

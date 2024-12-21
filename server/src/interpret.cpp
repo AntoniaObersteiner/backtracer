@@ -181,8 +181,8 @@ public:
 		}
 	}
 
-	const unsigned long * get_payload_ptr () const {
-		return payload.data();
+	const std::vector<unsigned long> & get_payload () const {
+		return payload;
 	}
 
 	void add_mapping () const;
@@ -216,22 +216,37 @@ public:
 
 class Mapping {
 public:
-	const Entry & entry;
+	const Entry * entry;
 	std::string name;
 	unsigned long base;
-	unsigned long size;
 	unsigned long task_id;
 
-	Mapping (const Entry & entry) : entry(entry) {
-		// read these integers as they are in the raw data
-		const unsigned long * name_array = entry.get_payload_ptr();
-		// read them as a character array
-		const char * name_chars = reinterpret_cast<const char *>(&(name_array[0]));
-		assert_attribute_name(name_chars, 4 * sizeof(unsigned long));
+	Mapping (
+		const std::string & name,
+		unsigned long base,
+		unsigned long task_id
+	) : entry(nullptr),
+		name(name),
+		base(base),
+		task_id(task_id)
+	{
+		std::cout
+			<< "Mapping of '" << name
+			<< "' base " << base
+			<< ", task " << task_id
+			<< " (abtract, not from entry)"
+			<< std::endl;
+	}
+
+	Mapping (const Entry & _entry) : entry(&_entry) {
+		// read the unsigned ints of the raw data as a character array
+		const std::vector<unsigned long> & payload = entry->get_payload();
+		const char * name_chars = reinterpret_cast<const char *>(payload.data());
+		assert_attribute_name(name_chars, payload.size() * sizeof(unsigned long));
 		name = std::string(name_chars);
 
-		base = entry.at("mapping_base");
-		task_id = entry.at("mapping_task_id");
+		base = entry->at("mapping_base");
+		task_id = entry->at("mapping_task_id");
 
 		std::cout
 			<< "Mapping of '" << name
@@ -254,12 +269,30 @@ public:
 	Self  & self  () { return *this; }
 	Super & super () { return dynamic_cast<Super &>(*this); }
 
-	Mappings () {}
+	Mappings () {
+		add_kernel_mapping(1);
+	}
 	std::map<std::pair<std::string, unsigned long>, Mapping *> by_task_and_binary;
 	std::map<unsigned long, std::vector<std::string>> binaries_by_task;
 
+	bool has_mapping (unsigned long task_id, const std::string & name) const {
+		const std::vector<std::string> & binaries = binaries_by_task.at(task_id);
+		return std::find(binaries.begin(), binaries.end(), name) != binaries.end();
+	}
+
 	void emplace_back (const Entry & entry) {
 		super().emplace_back(entry);
+		Mapping & mapping = self().back();
+		by_task_and_binary[std::make_pair(mapping.name, mapping.task_id)] = &mapping;
+		binaries_by_task[mapping.task_id].emplace_back(mapping.name);
+
+		if (!has_mapping(mapping.task_id, "KERNEL")) {
+			add_kernel_mapping(mapping.task_id);
+		}
+	}
+
+	void add_kernel_mapping (const unsigned long task_id) {
+		super().emplace_back("KERNEL", 0, task_id);
 		Mapping & mapping = self().back();
 		by_task_and_binary[std::make_pair(mapping.name, mapping.task_id)] = &mapping;
 		binaries_by_task[mapping.task_id].emplace_back(mapping.name);
