@@ -2,23 +2,34 @@ SHELL=bash
 
 CXX=g++-13
 
-CFLAGS= --max-errors=3 -ggdb
-CXXFLAGS= --max-errors=3 -ggdb --std=c++20 -I../../../../../ELFIO
-HEADERS=\
+BASE_PATH=../../../../..
+
+CFLAGS:= --max-errors=3 -ggdb
+CXXFLAGS:= --max-errors=3 -ggdb --std=c++20 -I$(BASE_PATH)/ELFIO
+HEADERS:=\
 	block.h \
 
-CXXHEADERS=\
+# keep the line above free
+CXXHEADERS:=\
 	elfi.hpp \
 
-SAMPLE_PATH=../../../../../docker_log
-SAMPLE=../../../../../docker_log/good_sample
-SAMPLE=../../../../../docker_log/full_sample
-SAMPLE=../../../../../docker_log/long_sample
-SAMPLE=../../../../../docker_log/fresh_giant
-BUFFER=example.btb
-OUTPUT=example.traces
-BINARY_DIR=../../../../../__build__/amd64/l4/bin/amd64_gen/l4f/.debug
+# keep the line above free
+
+SAMPLE_RELPATH=docker_log
+SAMPLE_PATH=$(BASE_PATH)/$(SAMPLE_RELPATH)
+SAMPLE_NAME?=sample
+MODULE?=qsort-backtraced
+
+SAMPLE:=$(SAMPLE_PATH)/$(SAMPLE_NAME)
+CLEANED:=$(SAMPLE_PATH)/$(SAMPLE_NAME).cleaned
+BUFFER:=$(SAMPLE_NAME).btb
+OUTPUT:=$(SAMPLE_NAME).traces
+
+BINARY_DIR=$(BASE_PATH)/__build__/amd64/l4/bin/amd64_gen/l4f/.debug
 BINARY_LIST=binaries.list
+
+.PHONY: all
+all: get_sample $(OUTPUT)
 
 unpack: unpack.c $(HEADERS)
 interpret: interpret.cpp $(CXXHEADERS)
@@ -26,22 +37,28 @@ interpret: interpret.cpp $(CXXHEADERS)
 $(BINARY_LIST): list_binaries.sh $(BINARY_DIR)
 	./list_binaries.sh $(BINARY_DIR) $(BINARY_LIST)
 
+# replaces the control characters by printable representations (e.g. ^M)
 %.cleaned: %
 	cat -v $< > $@
 
 %.btb: $(SAMPLE_PATH)/%.cleaned unpack
+	# unpack the printed hex to the backtrace buffer binary format
 	./unpack $< $@
 
 %.traces: %.btb interpret
+	# interpret the backtrace buffer binary format and print to $@ file
 	./interpret $< |& tee $@
 
+.PHONY: get_sample
+get_sample:
+	cd $(BASE_PATH); sudo OUTPUT=$(SAMPLE_RELPATH)/$(SAMPLE_NAME) ./start_docker.sh ./docker.sh $(MODULE)
+
 .PHONY: run
-run: ./interpret $(BUFFER)
-	./interpret $(BUFFER) |& tee $(OUTPUT)
+run: $(SAMPLE).traces
 
 .PHONY: sample_length
 sample_length:
-	./length_of_data.sh $(SAMPLE).cleaned
+	./length_of_data.sh $(CLEANED)
 
 .PHONY: gdb
 gdb: unpack
