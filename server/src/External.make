@@ -45,7 +45,7 @@ $(BINARY_LIST): list_binaries.sh $(BINARY_DIR)
 	# unpack the printed hex to the backtrace buffer binary format
 	./unpack $< $@
 
-%.traces: %.btb interpret
+%.traces: %.btb interpret $(BINARY_LIST)
 	# interpret the backtrace buffer binary format and print to $@ file
 	./interpret $< |& tee $@
 

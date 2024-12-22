@@ -27,4 +27,4 @@ for f in $(ls $path); do
 	fi
 done
 
-echo "KERNEL: __build__/amd64/fiasco/fiasco.dbg" >> $output_file
+echo "KERNEL: ../../../../../__build__/amd64/fiasco/fiasco.debug" >> $output_file
