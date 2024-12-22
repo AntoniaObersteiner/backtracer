@@ -14,6 +14,9 @@
 #include <l4/sys/debugger.h>
 #include <l4/re/env.h>
 #include <l4/sys/irq.h>
+#include <l4/sys/platform_control.h>
+#include <l4/sys/linkage.h>
+#include <l4/sys/types.h>
 #include <unistd.h>
 
 #include "block.h"
@@ -24,14 +27,24 @@ int main(void) {
 	bool is_valid = l4_is_valid_cap(dbg_cap) > 0;
 	printf(">>> dbg_cap %ld is %svalid <<<\n", dbg_cap, is_valid ? "" : "not ");
 
+	l4_cap_idx_t pfc_cap = L4_BASE_ICU_CAP;
+	is_valid = l4_is_valid_cap(pfc_cap) > 0;
+	printf(">>> pfc_cap %ld is %svalid <<<\n", pfc_cap, is_valid ? "" : "not ");
+
 	printf("wait a second...");
 	sleep(1);
 	l4_debugger_backtracing_start(dbg_cap);
 
 	printf("trace for 4 seconds...");
-	sleep(4);
+	sleep(1);
 	l4_debugger_backtracing_stop(dbg_cap);
 
+	printf(
+		"====================\n"
+		"== shutting down! ==\n"
+		"====================\n"
+	);
+	l4_platform_ctl_system_shutdown(pfc_cap, 0);
 	unsigned long remaining_words;
 	do {
 		remaining_words = export_backtrace_buffer_section(dbg_cap, false);
