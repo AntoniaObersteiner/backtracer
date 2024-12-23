@@ -7,3 +7,6 @@ interpret
 binaries.list
 *.swp
 *.swo
+test_interpret.gdb
+test_unpack.gdb
+*.elfdump

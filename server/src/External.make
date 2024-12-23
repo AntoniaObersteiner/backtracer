@@ -28,6 +28,8 @@ OUTPUT:=$(SAMPLE_NAME).traces
 BINARY_DIR=$(BASE_PATH)/__build__/amd64/l4/bin/amd64_gen/l4f/.debug
 BINARY_LIST=binaries.list
 
+ELFDUMP=ELFIO/examples/elfdump/elfdump
+
 .PHONY: all
 all: get_sample $(OUTPUT)
 
@@ -61,12 +63,25 @@ sample_length:
 	./length_of_data.sh $(CLEANED)
 
 .PHONY: gdb
-gdb: unpack
-	gdb -tui --command=test.gdb ./unpack
+gdb_unpack: unpack $(SAMPLE)
+	echo "b main" > test_unpack.gdb
+	echo "run $(SAMPLE) $(BUFFER) > ./stdout 2> ./stderr" >> test_unpack.gdb
+
+	gdb -tui --command=test_unpack.gdb ./unpack
 
 .PHONY: gdb_interpret
-gdb_interpret: interpret
+gdb_interpret: interpret $(BUFFER)
+	echo "b main" > test_interpret.gdb
+	echo "run $(BUFFER) > ./stdout 2> ./stderr" >> test_interpret.gdb
+
 	gdb -tui --command=test_interpret.gdb ./interpret
+
+$(ELFDUMP):
+	cd $(BASE_PATH)/ELFIO/; cmake .
+	make -C $(BASE_PATH)/ELFIO/ elfdump
+
+fiasco.elfdump: $(ELFDUMP)
+	$(ELFDUMP) __build__/amd64/fiasco/fiasco.debug | tee $@
 
 .PHONY: clean
 clean:
