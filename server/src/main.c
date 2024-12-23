@@ -27,7 +27,7 @@ int main(void) {
 	bool is_valid = l4_is_valid_cap(dbg_cap) > 0;
 	printf(">>> dbg_cap %ld is %svalid <<<\n", dbg_cap, is_valid ? "" : "not ");
 
-	l4_cap_idx_t pfc_cap = L4_BASE_ICU_CAP;
+	l4_cap_idx_t pfc_cap = 	l4re_env_get_cap("pfc");
 	is_valid = l4_is_valid_cap(pfc_cap) > 0;
 	printf(">>> pfc_cap %ld is %svalid <<<\n", pfc_cap, is_valid ? "" : "not ");
 
@@ -35,7 +35,7 @@ int main(void) {
 	sleep(1);
 	l4_debugger_backtracing_start(dbg_cap);
 
-	printf("trace for 4 seconds...");
+	printf("trace for some time...");
 	sleep(1);
 	l4_debugger_backtracing_stop(dbg_cap);
 
