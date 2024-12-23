@@ -424,8 +424,8 @@ public:
 				type_ptr, type_ptr - raw_entry_array[0], (type_ptr - raw_entry_array[0]) * 8,
 				*type_ptr, entry_length
 			);
-			#endif
 			fflush(stdout);
+			#endif
 			if (*type_ptr != BTE_INFO) {
 				self().emplace_back(raw_entry_array[i], entry_length, *entry_descriptor_map);
 			}
