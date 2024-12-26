@@ -216,7 +216,6 @@ public:
 
 class Mapping {
 public:
-	const Entry * entry;
 	std::string name;
 	unsigned long base;
 	unsigned long task_id;
@@ -225,8 +224,7 @@ public:
 		const std::string & name,
 		unsigned long base,
 		unsigned long task_id
-	) : entry(nullptr),
-		name(name),
+	) : name(name),
 		base(base),
 		task_id(task_id)
 	{
@@ -234,19 +232,18 @@ public:
 			<< "Mapping of '" << name
 			<< "' base " << base
 			<< ", task " << task_id
-			<< " (abtract, not from entry)"
 			<< std::endl;
 	}
 
-	Mapping (const Entry & _entry) : entry(&_entry) {
+	Mapping (const Entry & entry) {
 		// read the unsigned ints of the raw data as a character array
-		const std::vector<unsigned long> & payload = entry->get_payload();
+		const std::vector<unsigned long> & payload = entry.get_payload();
 		const char * name_chars = reinterpret_cast<const char *>(payload.data());
 		assert_attribute_name(name_chars, payload.size() * sizeof(unsigned long));
 		name = std::string(name_chars);
 
-		base = entry->at("mapping_base");
-		task_id = entry->at("mapping_task_id");
+		base = entry.at("mapping_base");
+		task_id = entry.at("mapping_task_id");
 
 		std::cout
 			<< "Mapping of '" << name
