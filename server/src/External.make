@@ -72,6 +72,7 @@ gdb_unpack: unpack $(SAMPLE)
 .PHONY: gdb_interpret
 gdb_interpret: interpret $(BUFFER)
 	echo "b main" > test_interpret.gdb
+	echo "b elfi.hpp:110" > test_interpret.gdb
 	echo "run $(BUFFER) > ./stdout 2> ./stderr" >> test_interpret.gdb
 
 	gdb -tui --command=test_interpret.gdb ./interpret

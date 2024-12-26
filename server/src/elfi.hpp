@@ -55,7 +55,11 @@ inline std::string demangle (const std::string & mangled) {
 	free((void *) ret);
 	return result;
 }
-inline const std::string get_symbol (ELFIO::elfio & reader, unsigned long instruction_pointer) {
+inline const std::string get_symbol (
+	const std::string & binary_name,
+	ELFIO::elfio & reader,
+	unsigned long instruction_pointer
+) {
 	using namespace ELFIO;
 
 	// Print ELF file sections info
@@ -80,9 +84,18 @@ inline const std::string get_symbol (ELFIO::elfio & reader, unsigned long instru
 					type, section_index, other
 				);
 				if (value <= instruction_pointer && instruction_pointer < value + size) {
+					return demangle(name);
+				} else {
+				if (
+					static_cast<long>(value) - 0x1000 <= static_cast<long>(instruction_pointer) &&
+					static_cast<long>(instruction_pointer) < static_cast<long>(value) + size + 0x1000
+				) {
 					/*
 					std::cout << "Number of sections: " << sec_num << std::endl;
-					std::cout << " [sc] label               size type" << std::endl;
+					std::cout << std::format(
+						" [{:2}] {:15} {:8} {:20}",
+						"sci", "label", "size", "type"
+					) << std::endl;
 					std::cout << std::format(
 						" [{:2}] {:15} {:8} {:20}",
 						i, psec->get_name(),
@@ -90,16 +103,26 @@ inline const std::string get_symbol (ELFIO::elfio & reader, unsigned long instru
 						get_section_type_name(psec->get_type())
 					) << std::endl;
 					std::cout << std::format(
-						"   [{:2}] {:30} {:16} {:16} {} {} {:16} {}",
-						"sb", "name", "value", "size", "bind", "type", "section_index", "other"
+						"   [{:4}] {:70} {:16} {:8} {:4} {:4} {:16} {:5}",
+						"symb", "name", "value", "size", "bind", "type", "section_index", "other"
 					) << std::endl;
+					// std::cerr << "[" << i << "] " << name << ": " << std::hex << value << std::endl;
+					static bool first = true;
+					if (first) {
 					std::cout << std::format(
-						"   [{:2}] {:30} {:16x} {:16x} {} {} {:16x} {}",
-						j, name, value, size, bind, type, section_index, other
+						"   [{:4}] {:70} {:16x} {:8} {:4} {:4} {:16} {:5}",
+						"?", "???", instruction_pointer, "?", "?", "?", "?", "?"
+					) << std::endl;
+					first = false;
+					}
+					std::string label = binary_name + "/" + name;
+					std::string label_truncated = label.substr(0, std::min(70ul, label.size()));
+					std::cout << std::format(
+						"   [{:4}] {:70} {:16x} {:8x} {:4} {:4} {:16x} {:5}",
+						j, label_truncated, value, size, bind, type, section_index, other
 					) << std::endl;
 					*/
-					return demangle(name);
-				} else {
+				}
 					continue;
 				}
 			}

@@ -256,7 +256,12 @@ public:
 	}
 
 	std::string lookup_symbol (ELFIO::elfio & reader, unsigned long virtual_address) {
-		return get_symbol(reader, virtual_address - base);
+		std::cout
+			<< "Mapping[" << name
+			<< ", "<< task_id << "]::lookup_symbol("
+			<< std::hex << virtual_address << ")"
+			<< std::endl;
+		return get_symbol(name, reader, virtual_address - base);
 	}
 };
 
