@@ -45,7 +45,7 @@ public:
 		return Range<T>(_begin, _end - _begin, _step);
 	}
 	static Range<T> open_end (T _begin, T _step = 1) {
-		return Range<T>(_begin, std::numeric_limits<T>::max() - 1 - _begin, _step);
+		return Range<T>(_begin, std::numeric_limits<T>::max() - _begin, _step);
 	}
 
 	T start  () const { return _begin; }

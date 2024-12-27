@@ -37,7 +37,7 @@ std::optional<Symbol> Mapping::find_symbol (
 	unsigned long virtual_address,
 	unsigned long time_in_us
 ) const {
-	if (true) std::cout
+	if (false) std::cout
 		<< "Mapping[" << name           << ", "
 		<< std::hex << task_id          << ", ["
 		<< std::hex << lifetime.start() << ", "
