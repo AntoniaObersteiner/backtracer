@@ -246,14 +246,14 @@ public:
 		task_id = entry.at("mapping_task_id");
 
 		std::cout
-			<< "Mapping of '" << name
+			<< " Mapping of '" << name
 			<< "' base " << base
 			<< ", task " << task_id
 			<< std::endl;
 	}
 
-	std::string lookup_symbol (ELFIO::elfio & reader, unsigned long virtual_address) {
-		std::cout
+	std::string lookup_symbol (ELFIO::elfio & reader, unsigned long virtual_address) const {
+		if (false) std::cout
 			<< "Mapping[" << name
 			<< ", "<< task_id << "]::lookup_symbol("
 			<< std::hex << virtual_address << ")"
@@ -270,11 +270,12 @@ public:
 	using Super = std::vector<Mapping>;
 	Self  & self  () { return *this; }
 	Super & super () { return dynamic_cast<Super &>(*this); }
+	const Super & super () const { return dynamic_cast<const Super &>(*this); }
 
 	Mappings () {
 		add_kernel_mapping(1);
 	}
-	std::map<std::pair<std::string, unsigned long>, Mapping *> by_task_and_binary;
+	std::map<std::pair<std::string, unsigned long>, unsigned int> by_task_and_binary;
 	std::map<unsigned long, std::vector<std::string>> binaries_by_task;
 
 	bool has_mapping (unsigned long task_id, const std::string & name) const {
@@ -282,10 +283,10 @@ public:
 		return std::find(binaries.begin(), binaries.end(), name) != binaries.end();
 	}
 
-	void emplace_back (const Entry & entry) {
+	void append (const Entry & entry) {
 		super().emplace_back(entry);
-		Mapping & mapping = self().back();
-		by_task_and_binary[std::make_pair(mapping.name, mapping.task_id)] = &mapping;
+		Mapping & mapping = self()[super().size() - 1];
+		by_task_and_binary[std::make_pair(mapping.name, mapping.task_id)] = super().size() - 1;
 		binaries_by_task[mapping.task_id].emplace_back(mapping.name);
 
 		if (!has_mapping(mapping.task_id, "KERNEL")) {
@@ -295,8 +296,8 @@ public:
 
 	void add_kernel_mapping (const unsigned long task_id) {
 		super().emplace_back("KERNEL", 0, task_id);
-		Mapping & mapping = self().back();
-		by_task_and_binary[std::make_pair(mapping.name, mapping.task_id)] = &mapping;
+		Mapping & mapping = super()[super().size() - 1];
+		by_task_and_binary[std::make_pair(mapping.name, mapping.task_id)] = super().size() - 1;
 		binaries_by_task[mapping.task_id].emplace_back(mapping.name);
 	}
 
@@ -321,14 +322,15 @@ public:
 		std::string result = "";
 		std::string result_binary = "";
 		for (const auto & binary : binaries_by_task[task_id]) {
-			Mapping * mapping = by_task_and_binary[std::make_pair(binary, task_id)];
-			if (!mapping) {
+			unsigned int mapping_index = by_task_and_binary[std::make_pair(binary, task_id)];
+			const Mapping & mapping = super()[mapping_index];
+			if (mapping_index >= super().size()) {
 				throw std::runtime_error(
 					"mapping of '" + binary + "', task " + std::to_string(task_id) + " is invalid?"
 				);
 			}
 			ELFIO::elfio & reader = elfio_readers[binary];
-			std::string looked_up = mapping->lookup_symbol(reader, virtual_address);
+			std::string looked_up = mapping.lookup_symbol(reader, virtual_address);
 			if (looked_up.empty())
 				continue;
 
@@ -345,6 +347,38 @@ public:
 		}
 		return result_binary + "/" + result;
 	}
+
+	void dbg () const {
+		std::cout << std::format(
+			"[{:2}] {:20} {:16} {:8} {:16} [{:2}] {:8} {:8} {:16}",
+			"mp", "name", "            base", " task_id", "         address",
+			"tb", " task_id", "  binary", "         address"
+		) << std::endl;
+
+		for (int i = 0; i < super().size(); i++) {
+			const Mapping & mapping = super()[i];
+			std::cout << std::format(
+				"[{:2}] {:20} {:16x} {:8x} {:16x}",
+				i, mapping.name, mapping.base, mapping.task_id,
+				reinterpret_cast<unsigned long>(const_cast<Mapping *>(&mapping))
+			);
+			if (i < by_task_and_binary.size()) {
+				auto it = by_task_and_binary.begin();
+				for (int _ = 0; _ < i; _++)
+					it++;
+				const auto [key, mapping_index] = *it;
+				const Mapping & mapping_by = super()[mapping_index];
+				const auto [binary, task_id] = key;
+				std::cout << std::format(
+					"  [{:2}] {:8x} {:8} {:16x}",
+					i, task_id, binary,
+					reinterpret_cast<unsigned long>(const_cast<Mapping *>(&mapping_by))
+				);
+			}
+			std::cout << std::endl;
+		}
+		std::cout << std::endl;
+	}
 };
 
 static Mappings mappings;
@@ -354,7 +388,7 @@ inline std::string Entry::task_binaries (unsigned long task_id) const {
 }
 
 inline void Entry::add_mapping () const {
-	mappings.emplace_back(*this);
+	mappings.append(*this);
 }
 
 inline std::string Entry::get_symbol_name (unsigned long virtual_address) const {
@@ -387,8 +421,10 @@ public:
 };
 
 class EntryArray : public std::vector<Entry> {
-	using Self = EntryArray;
-	Self & self () { return *this; }
+	using Self  = EntryArray;
+	using Super = std::vector<Entry>;
+	Self  & self  () { return *this; }
+	Super & super () { return static_cast<Super &>(*this); }
 	std::unique_ptr<EntryDescriptorMap> entry_descriptor_map;
 
 public:
@@ -429,7 +465,7 @@ public:
 			fflush(stdout);
 			#endif
 			if (*type_ptr != BTE_INFO) {
-				self().emplace_back(raw_entry_array[i], entry_length, *entry_descriptor_map);
+				super().emplace_back(raw_entry_array[i], entry_length, *entry_descriptor_map);
 			}
 		}
 	}
