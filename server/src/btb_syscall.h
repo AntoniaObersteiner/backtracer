@@ -159,6 +159,7 @@ l4_debugger_get_backtrace_buffer_section(
 	return syscall_result;
 }
 
+static const bool print_xor_blocks_for_debugging = false;
 static inline
 void print_backtrace_buffer_section (const unsigned long * buffer, unsigned long words) {
 	unsigned long size_in_blocks = words / block_data_capacity_in_words;
@@ -185,7 +186,8 @@ void print_backtrace_buffer_section (const unsigned long * buffer, unsigned long
 
 		print_block(&block, 0);
 		xor_blocks(&xor_block, &block);
-		print_block(&xor_block, "XOR");
+		if (print_xor_blocks_for_debugging)
+			print_block(&xor_block, "XOR");
 	}
 
 	unsigned long remainder = words % block_data_capacity_in_words;
