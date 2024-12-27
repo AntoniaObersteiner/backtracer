@@ -4,9 +4,7 @@
 #include "Entry.hpp"
 #include "Mapping.hpp"
 
-static const Range<> max_lifetime {0, std::numeric_limits<uint64_t>::max()};
-
-Mapping::Mapping (const Entry & entry) : lifetime(max_lifetime) {
+Mapping::Mapping (const Entry & entry) : lifetime(Range<>::open_end(0)) {
 	// read the unsigned ints of the raw data as a character array
 	const std::vector<unsigned long> & payload = entry.get_payload();
 	const char * name_chars = reinterpret_cast<const char *>(payload.data());
@@ -17,9 +15,8 @@ Mapping::Mapping (const Entry & entry) : lifetime(max_lifetime) {
 	task_id = entry.at("mapping_task_id");
 
 	// TODO: implement dlclose entry types and respect here
-	lifetime = Range<>::with_end(
-		entry.at("tsc_time"),
-		std::numeric_limits<uint64_t>::max()
+	lifetime = Range<>::open_end(
+		entry.at("tsc_time")
 	);
 
 	dbg();
@@ -41,10 +38,12 @@ std::optional<Symbol> Mapping::find_symbol (
 	unsigned long time_in_us
 ) const {
 	if (true) std::cout
-		<< "Mapping[" << name
-		<< ", "<< task_id << "]::find_symbol("
-		<< std::hex << virtual_address
-		<< ", " << std::hex << time_in_us << ")"
+		<< "Mapping[" << name           << ", "
+		<< std::hex << task_id          << ", ["
+		<< std::hex << lifetime.start() << ", "
+		<< std::hex << lifetime.stop()  << ")]::find_symbol("
+		<< std::hex << virtual_address  << ", "
+		<< std::hex << time_in_us       << ")"
 		<< std::endl;
 
 	if (!lifetime.contains(time_in_us))
@@ -74,7 +73,7 @@ void Mappings::append (const Entry & entry) {
 }
 
 void Mappings::add_kernel_mapping (const unsigned long task_id) {
-	super().emplace_back("KERNEL", 0, task_id, max_lifetime);
+	super().emplace_back("KERNEL", 0, task_id, Range<>::open_end(0));
 	Mapping & mapping = super()[super().size() - 1];
 	by_task_and_binary[std::make_pair(mapping.name, mapping.task_id)] = super().size() - 1;
 	binaries_by_task[mapping.task_id].emplace_back(mapping.name);
