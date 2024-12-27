@@ -17,7 +17,7 @@ Mapping::Mapping (const Entry & entry) : lifetime(max_lifetime) {
 	task_id = entry.at("mapping_task_id");
 
 	// TODO: implement dlclose entry types and respect here
-	lifetime = Range<> (
+	lifetime = Range<>::with_end(
 		entry.at("tsc_time"),
 		std::numeric_limits<uint64_t>::max()
 	);
@@ -47,7 +47,6 @@ std::optional<Symbol> Mapping::find_symbol (
 		<< ", " << std::hex << time_in_us << ")"
 		<< std::endl;
 
-	// TODO: replace "" with optional
 	if (!lifetime.contains(time_in_us))
 		return std::optional<Symbol>();
 

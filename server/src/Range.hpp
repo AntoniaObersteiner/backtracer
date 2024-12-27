@@ -41,6 +41,10 @@ public:
 		assert(_length >= 0);
 	}
 
+	static Range<T> with_end (T _begin, T _end, T _step = 1) {
+		return Range<T>(_begin, _end - _begin, _step);
+	}
+
 	T start  () const { return _begin; }
 	T stop   () const { return _begin + _length; }
 	T length () const { return          _length; }

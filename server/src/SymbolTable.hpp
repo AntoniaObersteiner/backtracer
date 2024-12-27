@@ -22,7 +22,7 @@ public:
 	{}
 
 	std::string label () const {
-		return binary + "/" + name;
+		return binary + "/" + demangle(name);
 	}
 };
 
