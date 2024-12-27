@@ -12,6 +12,11 @@ HEADERS:=\
 # keep the line above free
 CXXHEADERS:=\
 	elfi.hpp \
+	EntryArray.hpp \
+	EntryDescriptor.hpp \
+	Entry.hpp \
+	Mapping.hpp \
+	BinariesList.hpp \
 
 # keep the line above free
 

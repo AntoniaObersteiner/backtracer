@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <format>
 #include <elfio/elfio.hpp>
