@@ -1,4 +1,4 @@
-SHELL=bash
+SHELL=bash -o pipefail -e
 
 CXX=g++-13
 
@@ -52,8 +52,8 @@ BINARY_LIST=binaries.list
 
 ELFDUMP=ELFIO/examples/elfdump/elfdump
 
-.PHONY: all
-all: get_sample $(OUTPUT)
+.PHONY: default
+default: qsort.svg
 
 unpack: unpack.c $(HEADERS)
 interpret: $(CXXOBJECTS) $(CXXHEADERS)
@@ -65,8 +65,15 @@ interpret: $(CXXOBJECTS) $(CXXHEADERS)
 $(BINARY_LIST): list_binaries.sh $(BINARY_DIR)
 	./list_binaries.sh $(BINARY_DIR) $(BINARY_LIST)
 
+$(SAMPLE_PATH)/%.traced:
+	cd $(BASE_PATH) && sudo                                       \
+		OUTPUT=$(subst $(BASE_PATH)/,,$@)                         \
+		./start_docker.sh                                         \
+		./docker.sh                                               \
+		$(subst .traced,,$(subst $(SAMPLE_PATH)/,,$@))-backtraced
+
 # replaces the control characters by printable representations (e.g. ^M)
-%.cleaned: %.traced
+$(SAMPLE_PATH)/%.cleaned: $(SAMPLE_PATH)/%.traced
 	cat -v $< > $@
 
 %.btb: $(SAMPLE_PATH)/%.cleaned unpack
@@ -79,9 +86,6 @@ $(BINARY_LIST): list_binaries.sh $(BINARY_DIR)
 
 %.folded: %.btb interpret $(BINARY_LIST)
 	./interpret $< $@ |& tee $@.log
-
-$(SAMPLE_PATH)/%.traced:
-	cd $(BASE_PATH); sudo OUTPUT=$@ ./start_docker.sh ./docker.sh $(subst .traced,,$(subst $(SAMPLE_PATH)/,,$@))-backtraced
 
 %.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
 	$(FLAME_GRAPH)/flamegraph.pl $< > $@
@@ -118,7 +122,7 @@ fiasco.elfdump: $(ELFDUMP)
 .PHONY: clean
 clean:
 	rm -f \
-		*.btb *.interpreted *.folded \
+		*.btb *.interpreted *.folded *.svg \
 		./stderr ./stdout \
 		./unpack ./interpret \
 		$(CXXDEPENDENCIES) $(CXXOBJECTS)
