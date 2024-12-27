@@ -27,12 +27,13 @@ int main(void) {
 	bool is_valid = l4_is_valid_cap(dbg_cap) > 0;
 	printf(">>> dbg_cap %ld is %svalid <<<\n", dbg_cap, is_valid ? "" : "not ");
 
-	l4_cap_idx_t pfc_cap = 	l4re_env_get_cap("pfc");
+	l4_cap_idx_t pfc_cap = l4re_env_get_cap("pfc");
 	is_valid = l4_is_valid_cap(pfc_cap) > 0;
 	printf(">>> pfc_cap %ld is %svalid <<<\n", pfc_cap, is_valid ? "" : "not ");
 
 	printf("wait a second...");
-	sleep(1);
+	sleep(10);
+	l4_debugger_backtracing_set_timestep(dbg_cap, 1);
 	l4_debugger_backtracing_start(dbg_cap);
 
 	printf("trace for some time...");
