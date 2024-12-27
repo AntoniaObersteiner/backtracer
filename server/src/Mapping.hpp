@@ -11,8 +11,8 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 
-#include "elfi.hpp"
 #include "Entry.hpp"
+#include "SymbolTable.hpp"
 
 class Mapping {
 public:
@@ -37,7 +37,7 @@ public:
 
 	Mapping (const Entry & entry);
 
-	std::string lookup_symbol (ELFIO::elfio & reader, unsigned long virtual_address) const;
+	std::string lookup_symbol (const SymbolTable & symbol_table, unsigned long virtual_address) const;
 };
 
 class Mappings : public std::vector<Mapping> {
@@ -65,6 +65,5 @@ public:
 	void dbg () const;
 };
 
-extern std::map<std::string, ELFIO::elfio> elfio_readers;
 extern Mappings mappings;
 

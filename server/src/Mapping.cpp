@@ -1,7 +1,6 @@
 #include <iostream>
 #include <format>
 
-#include "elfi.hpp"
 #include "Entry.hpp"
 #include "Mapping.hpp"
 
@@ -22,13 +21,18 @@ Mapping::Mapping (const Entry & entry) {
 		<< std::endl;
 }
 
-std::string Mapping::lookup_symbol (ELFIO::elfio & reader, unsigned long virtual_address) const {
+std::string Mapping::lookup_symbol (const SymbolTable & symbol_table, unsigned long virtual_address) const {
 	if (false) std::cout
 		<< "Mapping[" << name
 		<< ", "<< task_id << "]::lookup_symbol("
 		<< std::hex << virtual_address << ")"
 		<< std::endl;
-	return get_symbol(name, reader, virtual_address - base);
+	auto symbol = symbol_table.find_symbol(virtual_address - base);
+
+	if (symbol)
+		return symbol->label();
+
+	return "";
 }
 
 Mappings::Mappings () {
@@ -86,8 +90,8 @@ std::string Mappings::lookup_symbol (unsigned long task_id, unsigned long virtua
 				"mapping of '" + binary + "', task " + std::to_string(task_id) + " is invalid?"
 			);
 		}
-		ELFIO::elfio & reader = elfio_readers[binary];
-		std::string looked_up = mapping.lookup_symbol(reader, virtual_address);
+		SymbolTable & symbol_table = binary_symbols[binary];
+		std::string looked_up = mapping.lookup_symbol(symbol_table, virtual_address);
 		if (looked_up.empty())
 			continue;
 

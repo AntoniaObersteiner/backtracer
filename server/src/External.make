@@ -17,6 +17,7 @@ CXXHEADERS:=\
 	Entry.hpp \
 	Mapping.hpp \
 	BinariesList.hpp \
+	SymbolTable.hpp \
 
 # keep the line above free
 CXXOBJECTS:=\
@@ -27,6 +28,7 @@ CXXOBJECTS:=\
 	Entry.o \
 	Mapping.o \
 	BinariesList.o \
+	SymbolTable.o \
 
 CXXDEPENDENCIES := $(CXXOBJECTS:.o=.d)
 

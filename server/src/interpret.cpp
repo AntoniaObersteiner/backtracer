@@ -2,10 +2,10 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 
-#include "elfi.hpp"
 #include "Mapping.hpp"
 #include "BinariesList.hpp"
 #include "EntryArray.hpp"
+#include "SymbolTable.hpp"
 
 // TODO: eliminate code duplication with fiasco/src/jdb/jdb_btb.cpp?
 
@@ -50,7 +50,7 @@ void mmap_file(
 }
 
 Mappings mappings;
-std::map<std::string, ELFIO::elfio> elfio_readers;
+std::map<std::string, SymbolTable> binary_symbols;
 
 int main(int argc, char * argv []) {
 	// TODO: use argp / similar
@@ -59,8 +59,7 @@ int main(int argc, char * argv []) {
 	BinariesList binaries_list { binaries_list_filename };
 
 	for (const auto &[name, path] : binaries_list) {
-		elfio_readers[name] = get_elfio_reader(path);
-		// elfi_test(path);
+		binary_symbols.emplace(name, SymbolTable(name, get_elfio_reader(path)));
 	}
 
 	std::cout << std::endl;
