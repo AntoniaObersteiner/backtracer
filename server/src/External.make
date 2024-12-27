@@ -4,8 +4,11 @@ CXX=g++-13
 
 BASE_PATH=../../../../..
 
+FLAME_GRAPH:=$(BASE_PATH)/FlameGraph
+ELFIO_PATH:=$(BASE_PATH)/ELFIO
+
 CFLAGS:= --max-errors=3 -ggdb
-CXXFLAGS:= --max-errors=3 -ggdb --std=c++20 -I$(BASE_PATH)/ELFIO -MMD -MP
+CXXFLAGS:= --max-errors=3 -ggdb --std=c++20 -I$(ELFIO_PATH) -MMD -MP
 HEADERS:=\
 	block.h \
 
@@ -33,10 +36,11 @@ CXXOBJECTS:=\
 
 CXXDEPENDENCIES := $(CXXOBJECTS:.o=.d)
 
+MODULE?=qsort
+
 SAMPLE_RELPATH=docker_log
 SAMPLE_PATH=$(BASE_PATH)/$(SAMPLE_RELPATH)
-SAMPLE_NAME?=sample
-MODULE?=qsort-backtraced
+SAMPLE_NAME?=$(MODULE)
 
 SAMPLE:=$(SAMPLE_PATH)/$(SAMPLE_NAME)
 CLEANED:=$(SAMPLE_PATH)/$(SAMPLE_NAME).cleaned
@@ -62,7 +66,7 @@ $(BINARY_LIST): list_binaries.sh $(BINARY_DIR)
 	./list_binaries.sh $(BINARY_DIR) $(BINARY_LIST)
 
 # replaces the control characters by printable representations (e.g. ^M)
-%.cleaned: %
+%.cleaned: %.traced
 	cat -v $< > $@
 
 %.btb: $(SAMPLE_PATH)/%.cleaned unpack
@@ -76,9 +80,11 @@ $(BINARY_LIST): list_binaries.sh $(BINARY_DIR)
 %.folded: %.btb interpret $(BINARY_LIST)
 	./interpret $< $@ |& tee $@.log
 
-.PHONY: get_sample
-get_sample:
-	cd $(BASE_PATH); sudo OUTPUT=$(SAMPLE_RELPATH)/$(SAMPLE_NAME) ./start_docker.sh ./docker.sh $(MODULE)
+$(SAMPLE_PATH)/%.traced:
+	cd $(BASE_PATH); sudo OUTPUT=$@ ./start_docker.sh ./docker.sh $(subst .traced,,$(subst $(SAMPLE_PATH)/,,$@))-backtraced
+
+%.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
+	$(FLAME_GRAPH)/flamegraph.pl $< > $@
 
 .PHONY: run
 run: $(SAMPLE).interpreted

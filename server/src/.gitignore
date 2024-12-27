@@ -3,6 +3,7 @@
 *.interpreted.log
 *.folded
 *.folded.log
+*.svg
 stderr
 stdout
 unpack
