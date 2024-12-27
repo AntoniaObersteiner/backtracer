@@ -7,10 +7,10 @@
 
 class Symbol {
 public:
-	const std::string name;
-	const std::string binary;
+	std::string name;
+	std::string binary;
 
-	const Range<> instruction_addresses;
+	Range<> instruction_addresses;
 
 	Symbol (
 		const std::string & name,

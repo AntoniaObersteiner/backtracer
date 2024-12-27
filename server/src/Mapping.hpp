@@ -40,16 +40,21 @@ public:
 
 	Mapping (const Entry & entry);
 
-	std::string lookup_symbol (const SymbolTable & symbol_table, unsigned long virtual_address) const;
+	std::optional<Symbol> find_symbol (
+		const SymbolTable & symbol_table,
+		unsigned long virtual_address,
+		unsigned long time_in_us
+	) const;
 };
 
 class Mappings : public std::vector<Mapping> {
 public:
 	using Self = Mappings;
 	using Super = std::vector<Mapping>;
-	Self  & self  () { return *this; }
-	Super & super () { return dynamic_cast<Super &>(*this); }
-	const Super & super () const { return dynamic_cast<const Super &>(*this); }
+	Self        & self  ()       { return *this; }
+	Self  const & self  () const { return *this; }
+	Super       & super ()       { return dynamic_cast<      Super &>(*this); }
+	Super const & super () const { return dynamic_cast<const Super &>(*this); }
 
 	Mappings ();
 	std::map<std::pair<std::string, unsigned long>, unsigned int> by_task_and_binary;
@@ -63,7 +68,11 @@ public:
 
 	std::string task_binaries (unsigned long task_id);
 
-	std::string lookup_symbol (unsigned long task_id, unsigned long virtual_address);
+	std::string lookup_symbol (
+		unsigned long task_id,
+		unsigned long virtual_address,
+		unsigned long time_in_us
+	);
 
 	void dbg () const;
 };

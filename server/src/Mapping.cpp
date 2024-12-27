@@ -35,18 +35,23 @@ void Mapping::dbg () const {
 		<< std::endl;
 }
 
-std::string Mapping::lookup_symbol (const SymbolTable & symbol_table, unsigned long virtual_address) const {
-	if (false) std::cout
+std::optional<Symbol> Mapping::find_symbol (
+	const SymbolTable & symbol_table,
+	unsigned long virtual_address,
+	unsigned long time_in_us
+) const {
+	if (true) std::cout
 		<< "Mapping[" << name
-		<< ", "<< task_id << "]::lookup_symbol("
-		<< std::hex << virtual_address << ")"
+		<< ", "<< task_id << "]::find_symbol("
+		<< std::hex << virtual_address
+		<< ", " << std::hex << time_in_us << ")"
 		<< std::endl;
-	auto symbol = symbol_table.find_symbol(virtual_address - base);
 
-	if (symbol)
-		return symbol->label();
+	// TODO: replace "" with optional
+	if (!lifetime.contains(time_in_us))
+		return std::optional<Symbol>();
 
-	return "";
+	return symbol_table.find_symbol(virtual_address - base);
 }
 
 Mappings::Mappings () {
@@ -93,9 +98,12 @@ std::string Mappings::task_binaries (unsigned long task_id) {
 	return result;
 }
 
-std::string Mappings::lookup_symbol (unsigned long task_id, unsigned long virtual_address) {
-	std::string result = "";
-	std::string result_binary = "";
+std::string Mappings::lookup_symbol (
+	unsigned long task_id,
+	unsigned long virtual_address,
+	unsigned long time_in_us
+) {
+	std::optional<Symbol> result;
 	for (const auto & binary : binaries_by_task[task_id]) {
 		unsigned int mapping_index = by_task_and_binary[std::make_pair(binary, task_id)];
 		const Mapping & mapping = super()[mapping_index];
@@ -105,22 +113,27 @@ std::string Mappings::lookup_symbol (unsigned long task_id, unsigned long virtua
 			);
 		}
 		SymbolTable & symbol_table = binary_symbols[binary];
-		std::string looked_up = mapping.lookup_symbol(symbol_table, virtual_address);
-		if (looked_up.empty())
+		std::optional<Symbol> looked_up = mapping.find_symbol(symbol_table, virtual_address, time_in_us);
+		if (!looked_up)
 			continue;
 
-		if (!result.empty()) {
+		if (result) {
 			throw std::runtime_error(std::format(
 				"both '{}' and '{}' map {:16x} ({} and {})",
-				result_binary, binary, virtual_address,
-				result, looked_up
+				result->binary, binary, virtual_address,
+				result->label(), looked_up->label()
 			));
 		}
 
+		static_assert(std::is_copy_constructible_v<Symbol>);
+		static_assert(std::is_copy_assignable_v<Symbol>);
+
 		result = looked_up;
-		result_binary = binary;
 	}
-	return result_binary + "/" + result;
+	if (!result)
+		return std::format("{:x}/{:016x}", task_id, virtual_address);
+
+	return result->label();
 }
 
 void Mappings::dbg () const {

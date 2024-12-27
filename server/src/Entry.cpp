@@ -51,7 +51,7 @@ std::string Entry::to_string () const {
 	}
 	for (size_t i = 0; i < payload.size(); i++) {
 		if (self().at("entry_type") == BTE_STACK) {
-			std::string symbol_name = get_symbol_name(payload[i]);
+			std::string symbol_name = get_symbol_name(payload[i], super().at("tsc_time"));
 			result += std::format("  {:15} : {:16x} {}\n", i, payload[i], symbol_name);
 		} else if (self().at("entry_type") == BTE_MAPPING) {
 			const char * name = reinterpret_cast<const char *>(&payload[i]);
@@ -71,7 +71,10 @@ void Entry::add_mapping () const {
 	mappings.append(*this);
 }
 
-std::string Entry::get_symbol_name (unsigned long virtual_address) const {
+std::string Entry::get_symbol_name (
+	unsigned long virtual_address,
+	unsigned long time_in_us
+) const {
 	unsigned long task_id = self().at("task_id");
-	return mappings.lookup_symbol(task_id, virtual_address);
+	return mappings.lookup_symbol(task_id, virtual_address, time_in_us);
 }
