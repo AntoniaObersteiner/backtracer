@@ -72,10 +72,10 @@ std::string Entry::folded (
 	}
 
 	std::string result;
-	for (size_t i = 0; i < payload.size(); i++) {
+	for (ssize_t i = payload.size() - 1; i >= 0; i--) {
 		std::string symbol_name = get_symbol_name(payload[i], super().at("tsc_time"));
 		result += symbol_name;
-		if (i < payload.size() - 1)
+		if (i > 0)
 			result += ";";
 	}
 	result += " ";
