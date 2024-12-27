@@ -4,7 +4,9 @@
 #include "Entry.hpp"
 #include "Mapping.hpp"
 
-Mapping::Mapping (const Entry & entry) {
+static const Range<> max_lifetime {0, std::numeric_limits<uint64_t>::max()};
+
+Mapping::Mapping (const Entry & entry) : lifetime(max_lifetime) {
 	// read the unsigned ints of the raw data as a character array
 	const std::vector<unsigned long> & payload = entry.get_payload();
 	const char * name_chars = reinterpret_cast<const char *>(payload.data());
@@ -14,10 +16,22 @@ Mapping::Mapping (const Entry & entry) {
 	base = entry.at("mapping_base");
 	task_id = entry.at("mapping_task_id");
 
+	// TODO: implement dlclose entry types and respect here
+	lifetime = Range<> (
+		entry.at("tsc_time"),
+		std::numeric_limits<uint64_t>::max()
+	);
+
+	dbg();
+}
+
+void Mapping::dbg () const {
 	std::cout
 		<< " Mapping of '" << name
 		<< "' base " << base
 		<< ", task " << task_id
+		<< ", life [" << std::hex << lifetime.start()
+		<<       ", " << std::hex << lifetime.stop() << ")"
 		<< std::endl;
 }
 
@@ -56,7 +70,7 @@ void Mappings::append (const Entry & entry) {
 }
 
 void Mappings::add_kernel_mapping (const unsigned long task_id) {
-	super().emplace_back("KERNEL", 0, task_id);
+	super().emplace_back("KERNEL", 0, task_id, max_lifetime);
 	Mapping & mapping = super()[super().size() - 1];
 	by_task_and_binary[std::make_pair(mapping.name, mapping.task_id)] = super().size() - 1;
 	binaries_by_task[mapping.task_id].emplace_back(mapping.name);

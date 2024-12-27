@@ -20,20 +20,23 @@ public:
 	unsigned long base;
 	unsigned long task_id;
 
+	// might be cut off by a later mapping entry!
+	Range<> lifetime;
+
 	Mapping (
 		const std::string & name,
 		unsigned long base,
-		unsigned long task_id
+		unsigned long task_id,
+		const Range<> & lifetime
 	) : name(name),
 		base(base),
-		task_id(task_id)
+		task_id(task_id),
+		lifetime(lifetime)
 	{
-		std::cout
-			<< "Mapping of '" << name
-			<< "' base " << base
-			<< ", task " << task_id
-			<< std::endl;
+		dbg ();
 	}
+
+	void dbg () const;
 
 	Mapping (const Entry & entry);
 
