@@ -93,6 +93,18 @@ $(SAMPLE_PATH)/%.cleaned: $(SAMPLE_PATH)/%.traced
 .PHONY: run
 run: $(SAMPLE).interpreted
 
+.PHONY: fiasco_config
+fiasco_config:
+	cd $(BASE_PATH) && sudo                                       \
+		./start_docker.sh                                         \
+		make -C /build/amd64/fiasco menuconfig
+
+.PHONY: l4_config
+l4_config:
+	cd $(BASE_PATH) && sudo                                       \
+		./start_docker.sh                                         \
+		make -C /build/amd64/l4 menuconfig
+
 .PHONY: sample_length
 sample_length:
 	./length_of_data.sh $(CLEANED)
