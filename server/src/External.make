@@ -18,6 +18,7 @@ CXXHEADERS:=\
 	Mapping.hpp \
 	BinariesList.hpp \
 	SymbolTable.hpp \
+	Range.hpp \
 
 # keep the line above free
 CXXOBJECTS:=\
@@ -51,7 +52,7 @@ ELFDUMP=ELFIO/examples/elfdump/elfdump
 all: get_sample $(OUTPUT)
 
 unpack: unpack.c $(HEADERS)
-interpret: $(CXXOBJECTS)
+interpret: $(CXXOBJECTS) $(CXXHEADERS)
 	$(CXX) -o $@ $(CXXOBJECTS) $(CXXFLAGS)
 
 %.o: %.cpp %.hpp
