@@ -5,7 +5,7 @@ CXX=g++-13
 BASE_PATH=../../../../..
 
 CFLAGS:= --max-errors=3 -ggdb
-CXXFLAGS:= --max-errors=3 -ggdb --std=c++20 -I$(BASE_PATH)/ELFIO
+CXXFLAGS:= --max-errors=3 -ggdb --std=c++20 -I$(BASE_PATH)/ELFIO -MMD -MP
 HEADERS:=\
 	block.h \
 
@@ -21,11 +21,14 @@ CXXHEADERS:=\
 # keep the line above free
 CXXOBJECTS:=\
 	elfi.o \
+	interpret.o \
 	EntryArray.o \
 	EntryDescriptor.o \
 	Entry.o \
 	Mapping.o \
 	BinariesList.o \
+
+CXXDEPENDENCIES := $(CXXOBJECTS:.o=.d)
 
 SAMPLE_RELPATH=docker_log
 SAMPLE_PATH=$(BASE_PATH)/$(SAMPLE_RELPATH)
@@ -46,8 +49,8 @@ ELFDUMP=ELFIO/examples/elfdump/elfdump
 all: get_sample $(OUTPUT)
 
 unpack: unpack.c $(HEADERS)
-interpret: interpret.cpp $(CXXHEADERS) $(CXXOBJECTS)
-	$(CXX) $< -o $@ $(CXXOBJECTS) $(CXXFLAGS)
+interpret: $(CXXOBJECTS)
+	$(CXX) -o $@ $(CXXOBJECTS) $(CXXFLAGS)
 
 %.o: %.cpp %.hpp
 	$(CXX) $< -c -o $@ $(CXXFLAGS)
@@ -102,4 +105,8 @@ fiasco.elfdump: $(ELFDUMP)
 
 .PHONY: clean
 clean:
-	rm -f *.btb ./stderr ./stdout ./unpack ./interpret *.traces *.o
+	rm -f \
+		*.btb *.traces \
+		./stderr ./stdout \
+		./unpack ./interpret \
+		$(CXXDEPENDENCIES) $(CXXOBJECTS)

@@ -11,3 +11,4 @@ test_interpret.gdb
 test_unpack.gdb
 *.elfdump
 *.o
+*.d
