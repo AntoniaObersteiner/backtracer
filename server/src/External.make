@@ -41,7 +41,7 @@ MODULE?=qsort-backtraced
 SAMPLE:=$(SAMPLE_PATH)/$(SAMPLE_NAME)
 CLEANED:=$(SAMPLE_PATH)/$(SAMPLE_NAME).cleaned
 BUFFER:=$(SAMPLE_NAME).btb
-OUTPUT:=$(SAMPLE_NAME).traces
+OUTPUT:=$(SAMPLE_NAME).interpreted
 
 BINARY_DIR=$(BASE_PATH)/__build__/amd64/l4/bin/amd64_gen/l4f/.debug
 BINARY_LIST=binaries.list
@@ -69,16 +69,19 @@ $(BINARY_LIST): list_binaries.sh $(BINARY_DIR)
 	# unpack the printed hex to the backtrace buffer binary format
 	./unpack $< $@
 
-%.traces: %.btb interpret $(BINARY_LIST)
-	# interpret the backtrace buffer binary format and print to $@ file
-	./interpret $< |& tee $@
+%.interpreted: %.btb interpret $(BINARY_LIST)
+	# interpret the backtrace buffer binary format and write to $@ file, log to $@.log
+	./interpret $< $@ |& tee $@.log
+
+%.folded: %.btb interpret $(BINARY_LIST)
+	./interpret $< $@ |& tee $@.log
 
 .PHONY: get_sample
 get_sample:
 	cd $(BASE_PATH); sudo OUTPUT=$(SAMPLE_RELPATH)/$(SAMPLE_NAME) ./start_docker.sh ./docker.sh $(MODULE)
 
 .PHONY: run
-run: $(SAMPLE).traces
+run: $(SAMPLE).interpreted
 
 .PHONY: sample_length
 sample_length:
@@ -109,7 +112,7 @@ fiasco.elfdump: $(ELFDUMP)
 .PHONY: clean
 clean:
 	rm -f \
-		*.btb *.traces \
+		*.btb *.interpreted *.folded \
 		./stderr ./stdout \
 		./unpack ./interpret \
 		$(CXXDEPENDENCIES) $(CXXOBJECTS)

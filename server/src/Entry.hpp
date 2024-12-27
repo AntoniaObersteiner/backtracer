@@ -36,6 +36,13 @@ public:
 		return payload;
 	}
 
+	const unsigned long start_time () const {
+		return self().at("tsc_time");
+	}
+	const unsigned long end_time () const {
+		return self().at("tsc_time") + self().at("tsc_duration");
+	}
+
 	void add_mapping () const;
 	std::string get_symbol_name (
 		unsigned long virtual_address,
@@ -45,5 +52,6 @@ public:
 	std::string task_binaries (unsigned long task_id) const;
 
 	std::string to_string () const;
+	std::string folded (const Entry * previous_entry, bool weight_from_time = true) const;
 };
 

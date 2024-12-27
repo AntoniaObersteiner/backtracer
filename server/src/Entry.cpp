@@ -63,6 +63,33 @@ std::string Entry::to_string () const {
 	return result;
 }
 
+std::string Entry::folded (
+	const Entry * previous_entry,
+	bool weight_from_time
+) const {
+	if (self().at("entry_type") != BTE_STACK) {
+		throw std::runtime_error("folded can only be called on BTE_STACK entries!");
+	}
+
+	std::string result;
+	for (size_t i = 0; i < payload.size(); i++) {
+		std::string symbol_name = get_symbol_name(payload[i], super().at("tsc_time"));
+		result += symbol_name;
+		if (i < payload.size() - 1)
+			result += ";";
+	}
+	result += " ";
+	uint64_t weight = 1;
+	if (weight_from_time) {
+		if (previous_entry)
+			weight = self().start_time() - previous_entry->end_time();
+		else
+			weight = 1;
+	}
+	result += std::to_string(weight);
+	return result;
+}
+
 std::string Entry::task_binaries (unsigned long task_id) const {
 	return mappings.task_binaries(task_id);
 }

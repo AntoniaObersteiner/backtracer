@@ -1,5 +1,8 @@
 *.btb
-*.traces
+*.interpreted
+*.interpreted.log
+*.folded
+*.folded.log
 stderr
 stdout
 unpack
