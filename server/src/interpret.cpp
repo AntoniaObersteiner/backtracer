@@ -1,11 +1,3 @@
-#include <iostream>
-#include <cstdint>
-#include <vector>
-#include <map>
-#include <fstream>
-#include <memory>
-#include <format>
-#include <regex>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
@@ -56,6 +48,9 @@ void mmap_file(
 
 	buffer = reinterpret_cast<uint64_t *>(raw_buffer);
 }
+
+Mappings mappings;
+std::map<std::string, ELFIO::elfio> elfio_readers;
 
 int main(int argc, char * argv []) {
 	// TODO: use argp / similar

@@ -19,6 +19,13 @@ CXXHEADERS:=\
 	BinariesList.hpp \
 
 # keep the line above free
+CXXOBJECTS:=\
+	elfi.o \
+	EntryArray.o \
+	EntryDescriptor.o \
+	Entry.o \
+	Mapping.o \
+	BinariesList.o \
 
 SAMPLE_RELPATH=docker_log
 SAMPLE_PATH=$(BASE_PATH)/$(SAMPLE_RELPATH)
@@ -39,7 +46,11 @@ ELFDUMP=ELFIO/examples/elfdump/elfdump
 all: get_sample $(OUTPUT)
 
 unpack: unpack.c $(HEADERS)
-interpret: interpret.cpp $(CXXHEADERS)
+interpret: interpret.cpp $(CXXHEADERS) $(CXXOBJECTS)
+	$(CXX) $< -o $@ $(CXXOBJECTS) $(CXXFLAGS)
+
+%.o: %.cpp %.hpp
+	$(CXX) $< -c -o $@ $(CXXFLAGS)
 
 $(BINARY_LIST): list_binaries.sh $(BINARY_DIR)
 	./list_binaries.sh $(BINARY_DIR) $(BINARY_LIST)
@@ -91,4 +102,4 @@ fiasco.elfdump: $(ELFDUMP)
 
 .PHONY: clean
 clean:
-	rm -f *.btb ./stderr ./stdout ./unpack ./interpret *.traces
+	rm -f *.btb ./stderr ./stdout ./unpack ./interpret *.traces *.o
