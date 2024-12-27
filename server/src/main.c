@@ -32,12 +32,12 @@ int main(void) {
 	printf(">>> pfc_cap %ld is %svalid <<<\n", pfc_cap, is_valid ? "" : "not ");
 
 	printf("wait a second...");
-	sleep(10);
-	l4_debugger_backtracing_set_timestep(dbg_cap, 1);
+	sleep(1);
+	l4_debugger_backtracing_set_timestep(dbg_cap, 5);
 	l4_debugger_backtracing_start(dbg_cap);
 
-	printf("trace for some time...");
-	sleep(1);
+	printf("trace for some time...\n");
+	sleep(10);
 	l4_debugger_backtracing_stop(dbg_cap);
 
 	printf(
