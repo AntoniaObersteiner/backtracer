@@ -30,17 +30,28 @@ template <typename Container>
 void dump_wrap (std::string note, const Container & data) {
 	dump(note, std::span(data));
 }
-
-int main() {
-	bool do_dumps = false;
+std::vector<uint64_t> get_raw_data(
+	const size_t size,
+	const double mixing_factor
+) {
 	std::vector<uint64_t> raw_data;
-	raw_data.resize(1024);
-	for (auto i = 0; i < raw_data.size(); ++i) {
-		if (i % 8 < 4)
-			raw_data[i] = i % 8;
-		else
-			raw_data[i] = i;
+	raw_data.reserve(size);
+	uint64_t mod = 64;
+	const int threshold = static_cast<int>(mixing_factor * static_cast<double>(mod));
+
+	for (auto i = 0; i < size; ++i) {
+		uint64_t value = i;
+		if (i % mod > threshold)
+			value = i % 8;
+		raw_data.push_back(value);
 	}
+	return raw_data;
+}
+
+double run_experiment(double mixing_factor) {
+	bool do_dumps = false;
+	auto raw_data = get_raw_data(1 << 12, mixing_factor);
+
 	std::vector<uint8_t> compressed;
 	compressed.resize(raw_data.size() * sizeof(uint64_t) * 2);
 
@@ -48,23 +59,24 @@ int main() {
 	if (do_dumps) dump_wrap("raw_data:", raw_data);
 
 	create_dictionary(dictionary, raw_data);
-
-	if (do_dumps) dump_wrap("dict:", dictionary);
+	if (do_dumps) dump_wrap("dictionary:", dictionary);
 
 	ssize_t compressed_size = compress(compressed, raw_data, dictionary);
 
-	if (compressed_size == -1) {
+	if (compressed_size < 0) {
 		std::cout << "could not compress into result array!" << std::endl;
+		exit(1);
 	}
 
-	std::span compressed_cut { compressed.data(), compressed_size };
+	std::span compressed_cut { compressed.data(), static_cast<size_t>(compressed_size) };
 
 	size_t raw_size = raw_data.size() * sizeof(decltype(raw_data)::value_type);
 	size_t comp_size = compressed_cut.size();
+	size_t dict_size = dictionary.size() * sizeof(decltype(dictionary)::value_type);
+	double ratio = 100.0 * static_cast<double>(comp_size + dict_size) / static_cast<double>(raw_size);
 	std::cout << std::format(
-		"compressed {} B into {} B, compression ratio: {:.3f} %",
-		raw_size, comp_size,
-		100.0 * static_cast<double>(comp_size) / static_cast<double>(raw_size)
+		"mixing_factor {:1.3f}: compressed {:5} B into {:5} B + {} B dict, ratio: {:7.3f} % {}",
+		mixing_factor, raw_size, comp_size, dict_size, ratio, std::string(static_cast<size_t>(.3 * ratio), '#')
 	) << std::endl;
 
 	if (do_dumps) dump_wrap("compressed:", compressed_cut);
@@ -87,6 +99,14 @@ int main() {
 			<< ", decompressed: " << decompressed[index]
 			<< std::endl;
 	} else {
-		std::cout << "no difference found, decompression works!" << std::endl;
+		if (do_dumps) std::cout << "no difference found, decompression works!" << std::endl;
+	}
+
+	return ratio;
+}
+
+int main() {
+	for (double mixing_factor = 0; mixing_factor <= 1; mixing_factor += .1) {
+		run_experiment(mixing_factor);
 	}
 }
