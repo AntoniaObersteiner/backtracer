@@ -4,6 +4,7 @@
 *.folded
 *.folded.log
 *.svg
+*.disas
 stderr
 stdout
 unpack

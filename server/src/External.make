@@ -131,6 +131,12 @@ $(ELFDUMP):
 fiasco.elfdump: $(ELFDUMP)
 	$(ELFDUMP) __build__/amd64/fiasco/fiasco.debug | tee $@
 
+%.disas:
+	export link=$$(readlink $(BINARY_DIR)/$(@:.disas=))   && \
+	export file=$(BASE_PATH)$${link/build/__build__}      && \
+	echo "file: $$file"                                   && \
+	objdump -lSd  "$(BASE_PATH)$${link/build/__build__}" > $@
+
 .PHONY: clean
 clean:
 	rm -f \
