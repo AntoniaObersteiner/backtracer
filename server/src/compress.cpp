@@ -94,13 +94,6 @@ void create_dictionary (
 	auto entry = dictionary.begin();
 
 	for (; entry < dictionary.end(); ++entry) {
-		std::cerr
-			<< "running: " << dictionary.size() << ", "
-			<< &*entry  << ", "
-			<< &*dictionary.begin()  << ", "
-			<< &*dictionary.end()
-			<< std::endl;
-
 		uint8_t key = entry - dictionary.begin();
 		if (key == zero_marker) {
 			*entry = 0;

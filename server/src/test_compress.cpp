@@ -32,6 +32,7 @@ void dump_wrap (std::string note, const Container & data) {
 }
 
 int main() {
+	bool do_dumps = false;
 	std::vector<uint64_t> raw_data;
 	raw_data.resize(1024);
 	for (auto i = 0; i < raw_data.size(); ++i) {
@@ -44,11 +45,11 @@ int main() {
 	compressed.resize(raw_data.size() * sizeof(uint64_t) * 2);
 
 	std::array<uint64_t, dictionary_capacity> dictionary;
-	dump_wrap("raw_data:", raw_data);
+	if (do_dumps) dump_wrap("raw_data:", raw_data);
 
 	create_dictionary(dictionary, raw_data);
 
-	dump_wrap("dict:", dictionary);
+	if (do_dumps) dump_wrap("dict:", dictionary);
 
 	ssize_t compressed_size = compress(compressed, raw_data, dictionary);
 
@@ -58,11 +59,11 @@ int main() {
 
 	std::span compressed_cut { compressed.data(), compressed_size };
 
-	dump_wrap("compressed:", compressed_cut);
+	if (do_dumps) dump_wrap("compressed:", compressed_cut);
 
 	auto decompressed = decompress(compressed_cut, dictionary);
 
-	dump_wrap("decompressed:", decompressed);
+	if (do_dumps) dump_wrap("decompressed:", decompressed);
 
 	if (raw_data.size() != decompressed.size()) {
 		std::cout << "raw_data and decompressed differ in length, "
