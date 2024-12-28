@@ -58,6 +58,8 @@ default: qsort.svg
 unpack: unpack.c $(HEADERS)
 interpret: $(CXXOBJECTS) $(CXXHEADERS)
 	$(CXX) -o $@ $(CXXOBJECTS) $(CXXFLAGS)
+test_compress: test_compress.o compress.o compress.hpp
+	$(CXX) -o $@ $(filter %.o,$+)
 
 %.o: %.cpp %.hpp
 	$(CXX) $< -c -o $@ $(CXXFLAGS)
@@ -123,6 +125,14 @@ gdb_interpret: interpret $(BUFFER)
 	echo "run $(BUFFER) > ./stdout 2> ./stderr" >> test_interpret.gdb
 
 	gdb -tui --command=test_interpret.gdb ./interpret
+
+.PHONY: gdb_interpret
+gdb_compress: test_compress
+	echo "b main" > test_compress.gdb
+	echo "b compress.cpp:70" > test_compress.gdb
+	echo "run > ./stdout 2> ./stderr" >> test_compress.gdb
+
+	gdb -tui --command=test_compress.gdb ./test_compress
 
 $(ELFDUMP):
 	cd $(BASE_PATH)/ELFIO/; cmake .

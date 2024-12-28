@@ -9,11 +9,13 @@ stderr
 stdout
 unpack
 interpret
+test_compress
 binaries.list
 *.swp
 *.swo
 test_interpret.gdb
 test_unpack.gdb
+test_compress.gdb
 *.elfdump
 *.o
 *.d
