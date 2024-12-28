@@ -59,6 +59,14 @@ int main() {
 
 	std::span compressed_cut { compressed.data(), compressed_size };
 
+	size_t raw_size = raw_data.size() * sizeof(decltype(raw_data)::value_type);
+	size_t comp_size = compressed_cut.size();
+	std::cout << std::format(
+		"compressed {} B into {} B, compression ratio: {:.3f} %",
+		raw_size, comp_size,
+		100.0 * static_cast<double>(comp_size) / static_cast<double>(raw_size)
+	) << std::endl;
+
 	if (do_dumps) dump_wrap("compressed:", compressed_cut);
 
 	auto decompressed = decompress(compressed_cut, dictionary);
