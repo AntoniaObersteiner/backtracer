@@ -19,8 +19,8 @@
 #include <l4/sys/types.h>
 #include <unistd.h>
 
-#include "block.h"
-#include "btb_syscall.h"
+#include "src/block.h"
+#include "src/btb_syscall.h"
 
 int main(void) {
 	l4_cap_idx_t dbg_cap = L4_BASE_DEBUGGER_CAP;
