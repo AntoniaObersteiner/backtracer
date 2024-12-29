@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-static const dictionary_capacity = 256;
+static const size_t dictionary_capacity = 256;
 // returns -1 if compressed is too large, then c_compressed is almost filled
 ssize_t compress_c (
 	uint8_t        * c_compressed,

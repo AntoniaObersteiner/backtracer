@@ -48,7 +48,7 @@ int main(void) {
 	l4_platform_ctl_system_shutdown(pfc_cap, 0);
 	unsigned long remaining_words;
 	do {
-		remaining_words = export_backtrace_buffer_section(dbg_cap, false);
+		remaining_words = export_backtrace_buffer_section(dbg_cap, false, true);
 	} while (remaining_words);
 
 	printf("everything exported, press Ctrl-A and then X\n");
