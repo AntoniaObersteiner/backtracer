@@ -1,3 +1,4 @@
+*.cleaned
 *.btb
 *.interpreted
 *.interpreted.log

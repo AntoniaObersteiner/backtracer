@@ -2,6 +2,12 @@ SHELL=bash -o pipefail -e
 
 CXX=g++-13
 
+# source directory
+S=./src
+# build directory (not named ./build, consider fiasco and l4's ./__build__ and /build complexities)
+O=./objects
+# data (intermediate objects and samples
+D=./data
 BASE_PATH=../../../../..
 
 FLAME_GRAPH:=$(BASE_PATH)/FlameGraph
@@ -9,11 +15,11 @@ ELFIO_PATH:=$(BASE_PATH)/ELFIO
 
 CFLAGS:= --max-errors=3 -ggdb
 CXXFLAGS:= --max-errors=3 -ggdb --std=c++20 -I$(ELFIO_PATH) -MMD -MP
-HEADERS:=\
+CHEADERS:=$(addprefix $S/,\
 	block.h \
+)
 
-# keep the line above free
-CXXHEADERS:=\
+CXXHEADERS:=$(addprefix $S/,\
 	elfi.hpp \
 	EntryArray.hpp \
 	EntryDescriptor.hpp \
@@ -22,9 +28,9 @@ CXXHEADERS:=\
 	BinariesList.hpp \
 	SymbolTable.hpp \
 	Range.hpp \
+)
 
-# keep the line above free
-CXXOBJECTS:=\
+CXXOBJECTS:=$(addprefix $O/,\
 	elfi.o \
 	interpret.o \
 	EntryArray.o \
@@ -33,35 +39,36 @@ CXXOBJECTS:=\
 	Mapping.o \
 	BinariesList.o \
 	SymbolTable.o \
+)
 
-CXXDEPENDENCIES := $(CXXOBJECTS:.o=.d)
+CXXDEPENDENCIES := $(addprefix $O/,$(CXXOBJECTS:.o=.d))
 
 MODULE?=qsort
 
 SAMPLE_RELPATH=docker_log
 SAMPLE_PATH=$(BASE_PATH)/$(SAMPLE_RELPATH)
-SAMPLE_NAME?=$(MODULE)
 
-SAMPLE:=$(SAMPLE_PATH)/$(SAMPLE_NAME)
-CLEANED:=$(SAMPLE_PATH)/$(SAMPLE_NAME).cleaned
-BUFFER:=$(SAMPLE_NAME).btb
-OUTPUT:=$(SAMPLE_NAME).interpreted
+SAMPLE:=$(SAMPLE_PATH)/$(MODULE).traced
+CLEANED:=$D/$(MODULE).cleaned
+BUFFER:=$D/$(MODULE).btb
+INTERPRETED:=$D/$(MODULE).interpreted
 
 BINARY_DIR=$(BASE_PATH)/__build__/amd64/l4/bin/amd64_gen/l4f/.debug
-BINARY_LIST=binaries.list
+BINARY_LIST=$D/binaries.list
 
 ELFDUMP=ELFIO/examples/elfdump/elfdump
 
 .PHONY: default
-default: qsort.svg
+default: $D/$(MODULE).svg
 
-unpack: unpack.c $(HEADERS)
+unpack: $S/unpack.c $(CHEADERS)
+	$(CC) -o $@ $< $(CFLAGS)
 interpret: $(CXXOBJECTS) $(CXXHEADERS)
 	$(CXX) -o $@ $(CXXOBJECTS) $(CXXFLAGS)
-test_compress: test_compress.o compress.o compress.hpp
+test_compress: $O/test_compress.o $O/compress.o $S/compress.hpp
 	$(CXX) -o $@ $(filter %.o,$+)
 
-%.o: %.cpp %.hpp
+$O/%.o: $S/%.cpp
 	$(CXX) $< -c -o $@ $(CXXFLAGS)
 
 $(BINARY_LIST): list_binaries.sh $(BINARY_DIR)
@@ -73,12 +80,13 @@ $(SAMPLE_PATH)/%.traced:
 		./start_docker.sh                                         \
 		./docker.sh                                               \
 		$(subst .traced,,$(subst $(SAMPLE_PATH)/,,$@))-backtraced
+		#$*-backtraced
 
 # replaces the control characters by printable representations (e.g. ^M)
-$(SAMPLE_PATH)/%.cleaned: $(SAMPLE_PATH)/%.traced
+$D/%.cleaned: $(SAMPLE_PATH)/%.traced
 	cat -v $< > $@
 
-%.btb: $(SAMPLE_PATH)/%.cleaned unpack
+%.btb: %.cleaned unpack
 	# unpack the printed hex to the backtrace buffer binary format
 	./unpack $< $@
 
@@ -92,8 +100,7 @@ $(SAMPLE_PATH)/%.cleaned: $(SAMPLE_PATH)/%.traced
 %.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
 	$(FLAME_GRAPH)/flamegraph.pl $< > $@
 
-.PHONY: run
-run: $(SAMPLE).interpreted
+.PRECIOUS: $D/%
 
 .PHONY: fiasco_config
 fiasco_config:
@@ -112,9 +119,9 @@ sample_length:
 	./length_of_data.sh $(CLEANED)
 
 .PHONY: gdb
-gdb_unpack: unpack $(SAMPLE)
+gdb_unpack: unpack $(CLEANED)
 	echo "b main" > test_unpack.gdb
-	echo "run $(SAMPLE) $(BUFFER) > ./stdout 2> ./stderr" >> test_unpack.gdb
+	echo "run $(CLEANED) $(BUFFER) > ./stdout 2> ./stderr" >> test_unpack.gdb
 
 	gdb -tui --command=test_unpack.gdb ./unpack
 
@@ -138,19 +145,20 @@ $(ELFDUMP):
 	cd $(BASE_PATH)/ELFIO/; cmake .
 	make -C $(BASE_PATH)/ELFIO/ elfdump
 
-fiasco.elfdump: $(ELFDUMP)
+$O/fiasco.elfdump: $(ELFDUMP)
 	$(ELFDUMP) __build__/amd64/fiasco/fiasco.debug | tee $@
 
-%.disas:
-	export link=$$(readlink $(BINARY_DIR)/$(@:.disas=))   && \
+$O/%.disas:
+	export link=$$(readlink $(BINARY_DIR)/$*)             && \
 	export file=$(BASE_PATH)$${link/build/__build__}      && \
 	echo "file: $$file"                                   && \
 	objdump -lSd  "$(BASE_PATH)$${link/build/__build__}" > $@
 
 .PHONY: clean
 clean:
+	# note: does not remove .cleaned or .traced files, because tracing takes so long
 	rm -f \
-		*.btb *.interpreted *.folded *.svg \
+		$D/*.btb $D/*.interpreted $D/*.folded $D/*.svg \
 		./stderr ./stdout \
 		./unpack ./interpret \
 		$(CXXDEPENDENCIES) $(CXXOBJECTS)
