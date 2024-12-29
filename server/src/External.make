@@ -68,11 +68,19 @@ interpret: $(CXXOBJECTS) $(CXXHEADERS)
 test_compress: $O/test_compress.o $O/compress.o $S/compress.hpp
 	$(CXX) -o $@ $(filter %.o,$+)
 
+.NOTINTERMEDIATE:
+
+$(SAMPLE_RELPATH)/%.traced:
+$D/%.cleaned:
+$D/%.folded:
+$D/%.interpreted:
+$D/%.btb:
+
 $O/%.o: $S/%.cpp
 	$(CXX) $< -c -o $@ $(CXXFLAGS)
 
-$(BINARY_LIST): list_binaries.sh $(BINARY_DIR)
-	./list_binaries.sh $(BINARY_DIR) $(BINARY_LIST)
+$(BINARY_LIST): $(BINARY_DIR) list_binaries.sh
+	./list_binaries.sh $< $@
 
 $(SAMPLE_PATH)/%.traced:
 	cd $(BASE_PATH) && sudo                                       \
@@ -98,8 +106,6 @@ $D/%.cleaned: $(SAMPLE_PATH)/%.traced
 
 %.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
 	$(FLAME_GRAPH)/flamegraph.pl $< > $@
-
-.PRECIOUS: $D/%
 
 .PHONY: fiasco_config
 fiasco_config:

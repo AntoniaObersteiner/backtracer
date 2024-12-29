@@ -11,7 +11,7 @@ stdout
 unpack
 interpret
 test_compress
-binaries.list
+data/binaries.list
 *.swp
 *.swo
 test_interpret.gdb
