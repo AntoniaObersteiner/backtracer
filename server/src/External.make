@@ -79,8 +79,7 @@ $(SAMPLE_PATH)/%.traced:
 		OUTPUT=$(subst $(BASE_PATH)/,,$@)                         \
 		./start_docker.sh                                         \
 		./docker.sh                                               \
-		$(subst .traced,,$(subst $(SAMPLE_PATH)/,,$@))-backtraced
-		#$*-backtraced
+		$*-backtraced
 
 # replaces the control characters by printable representations (e.g. ^M)
 $D/%.cleaned: $(SAMPLE_PATH)/%.traced
@@ -152,7 +151,7 @@ $O/%.disas:
 	export link=$$(readlink $(BINARY_DIR)/$*)             && \
 	export file=$(BASE_PATH)$${link/build/__build__}      && \
 	echo "file: $$file"                                   && \
-	objdump -lSd  "$(BASE_PATH)$${link/build/__build__}" > $@
+	objdump -lSd  "$$file" > $@
 
 .PHONY: clean
 clean:
