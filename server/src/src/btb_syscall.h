@@ -205,22 +205,44 @@ void print_backtrace_buffer_section (const unsigned long * buffer, unsigned long
 	print_block(&xor_block, 0);
 }
 
+typedef compression_header_s {
+	// if true, dictionary follows at dictionary_offset after the start of this struct
+	//  then the compressed data, which needs a byte-size since its end is not word-aligned
+	// if false, dictionary_length is 0 and uncompressed data starts instead of dictionary
+	unsigned long is_compressed;
+	unsigned long dictionary_offset;
+	unsigned long dictionary_length;
+	unsigned long data_length_in_bytes;
+} compression_header_t;
+
 static inline
 unsigned long
 export_backtrace_buffer_section (l4_cap_idx_t cap, bool full_section_only) {
 	const unsigned kumem_page_order = 3;
-	const unsigned kumem_capacity_in_bytes = (1 << (kumem_page_order + 10));
+	const unsigned kumem_capacity_in_pages   = (1 << kumem_page_order);
+	const unsigned kumem_capacity_in_kibytes = kumem_capacity_in_pages * 4;
+	const unsigned kumem_capacity_in_bytes   = kumem_capacity_in_kibytes << 10;
+	const unsigned kumem_capacity_in_words   = kumem_capacity_in_bytes / sizeof(unsigned long);
 	static l4_addr_t kumem = 0;
 	if (!kumem) {
 		// TODO: this allocation is never freed. this makes sense,
 		// because it basically has life-of-the-process lifetime.
 		if (l4re_util_kumem_alloc(&kumem, kumem_page_order, L4_BASE_TASK_CAP, l4re_env()->rm)) {
-			printf("!!! could not allocate %d kiB kumem!!!\n", 1 << kumem_page_order);
+			printf("!!! could not allocate %d kiB kumem!!!\n", kumem_capacity_in_kibytes);
 		}
-		printf("successfully allocated %d kiB kumem at %p\n", 1 << kumem_page_order, (void *) kumem);
+		printf("successfully allocated %d kiB kumem at %p\n", kumem_capacity_in_kibytes, (void *) kumem);
 	}
 
-	unsigned long * buffer = (unsigned long *) kumem;
+	// pointer is redicrected if we use compression.
+	unsigned long * actual_result_buffer = (unsigned long *) kumem;
+	unsigned long actual_result_words;
+
+	compression_header_t * compression_header_1 = (compression_header_t *) kumem;
+
+	const unsigned header_capacity_in_words = (sizeof(compression_header_t) - 1) / sizeof(unsigned long) + 1;
+	const unsigned buffer_capacity_in_words = kumem_capacity_in_words - header_capacity_in_words;
+
+	unsigned long * buffer = ((unsigned long *) kumem) + header_capacity_in_words;
 	unsigned long returned_words;
 	unsigned long remaining_words;
 	l4_debugger_get_backtrace_buffer_section(
@@ -232,8 +254,45 @@ export_backtrace_buffer_section (l4_cap_idx_t cap, bool full_section_only) {
 		&remaining_words
 	);
 
+	if (do_compress) {
+		// we will try to compress into this data buffer,
+		// if dictionary + compressed data don't fit it's not worth it.
+		unsigned long dictionary_and_compressed [returned_words + header_capacity_in_words];
+		compression_header_t * compression_header_2 = (compression_header_t *) &dictionary_and_compressed[0];
+		unsigned long * dictionary = &dictionary_and_compressed[header_capacity_in_words];
+		unsigned char * compressed = (unsigned char *) (dictionary + dictionary_capacity);
+		const unsigned long compressed_capacity = (returned_words - dictionary_capacity) * sizeof(unsigned long);
+
+		ssize_t compressed_bytes = compress_c(
+			compressed,
+			compressed_capacity,
+			buffer,
+			returned_words,
+			dictionary,
+			dictionary_capacity
+		);
+		if (compressed_bytes < 0) {
+			// couldn't compress into the given compressed buffer,
+			// leave actual_result_buffer where it is.
+			actual_result_words = header_capacity_in_words + returned_words;
+			// write the header struct it points to
+			compression_header_1->is_compressed = false;
+			compression_header_1->dictionary_length = 0;
+			compression_header_1->dictionary_offset = header_capacity_in_words;
+			compression_header_1->data_length_in_bytes = returned_words * sizeof(unsigned long);
+		} else {
+			unsigned long compressed_in_words = (compressed_bytes - 1) / sizeof(unsigned long) + 1;
+			actual_result_buffer = &dictionary_and_compressed[0];
+			actual_result_words = header_capacity_in_words + dictionary_capacity + compressed_in_words;
+			compression_header_2->is_compressed = true;
+			compression_header_2->dictionary_length = dictionary_capacity;
+			compression_header_2->dictionary_offset = header_capacity_in_words;
+			compression_header_2->data_length_in_bytes = compressed_bytes;
+		}
+	}
+
 	if (returned_words)
-		print_backtrace_buffer_section(buffer, returned_words);
+		print_backtrace_buffer_section(actual_result_buffer, actual_result_words);
 
 	return remaining_words;
 }
