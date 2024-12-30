@@ -232,13 +232,17 @@ export_backtrace_buffer_section (l4_cap_idx_t cap, bool full_section_only, bool 
 		printf("successfully allocated %d kiB kumem at %p\n", kumem_capacity_in_kibytes, (void *) kumem);
 	}
 
-	// pointer is redicrected if we use compression.
+	// pointer is redirected if we use compression, length also changes then.
 	unsigned long * actual_result_buffer = (unsigned long *) kumem;
 	unsigned long actual_result_words;
 
 	compression_header_t * compression_header_1 = (compression_header_t *) kumem;
 
-	const unsigned long header_capacity_in_words = (sizeof(compression_header_t) - 1) / sizeof(unsigned long) + 1;
+	const unsigned long header_capacity_in_words = (
+		try_compress
+		? (sizeof(compression_header_t) - 1) / sizeof(unsigned long) + 1
+		: 0
+	);
 	const unsigned long buffer_capacity_in_words = kumem_capacity_in_words - header_capacity_in_words;
 
 	unsigned long * buffer = ((unsigned long *) kumem) + header_capacity_in_words;
@@ -257,61 +261,29 @@ export_backtrace_buffer_section (l4_cap_idx_t cap, bool full_section_only, bool 
 	if (try_compress) {
 		// we will try to compress into this data buffer,
 		// if dictionary + compressed data don't fit it's not worth it.
-		unsigned long dictionary_and_compressed [returned_words + header_capacity_in_words];
-		compression_header_t * compression_header_2 = (compression_header_t *) &dictionary_and_compressed[0];
-		unsigned long * dictionary = &dictionary_and_compressed[header_capacity_in_words];
-		unsigned char * compressed = (unsigned char *) (dictionary + dictionary_capacity);
-		const unsigned long compressed_capacity = (returned_words - dictionary_capacity) * sizeof(unsigned long);
-
+		unsigned long dictionary_and_compressed [header_capacity_in_words + returned_words];
 		printf(
 			"trying to compress\n"
-			"    btb  %16p (cap %8ld w, len %ld w)\n"
-			"    into %16p (cap %8ld w = %ld B),\n"
-			"    dict %16p (cap %8ld w)\n",
-			buffer, buffer_capacity_in_words, returned_words,
-			compressed, compressed_capacity / sizeof(unsigned long), compressed_capacity,
-			dictionary, dictionary_capacity
+			"    btb  %16p (cap %8ld w, len %ld w)\n",
+			buffer, buffer_capacity_in_words, returned_words
+			// continued inside compress_smart, different vars are visible inside or outside
 		);
-		ssize_t compressed_bytes = compress_c(
-			compressed,
-			compressed_capacity,
+		ssize_t compressed_bytes = compress_smart(
+			dictionary_and_compressed,
+			returned_words + header_capacity_in_words,
 			buffer,
 			returned_words,
-			dictionary,
-			dictionary_capacity
+			compression_header_1
 		);
-		compression_header_t * compression_header;
 		if (compressed_bytes < 0) {
 			// couldn't compress into the given compressed buffer,
 			// leave actual_result_buffer where it is.
 			actual_result_words = header_capacity_in_words + returned_words;
-			// write the header struct it points to
-			compression_header_1->is_compressed = false;
-			compression_header_1->dictionary_length = 0;
-			compression_header_1->dictionary_offset = header_capacity_in_words;
-			compression_header_1->data_length_in_bytes = returned_words * sizeof(unsigned long);
-			compression_header = compression_header_1;
 		} else {
 			unsigned long compressed_in_words = (compressed_bytes - 1) / sizeof(unsigned long) + 1;
 			actual_result_buffer = &dictionary_and_compressed[0];
 			actual_result_words = header_capacity_in_words + dictionary_capacity + compressed_in_words;
-			compression_header_2->is_compressed = true;
-			compression_header_2->dictionary_length = dictionary_capacity;
-			compression_header_2->dictionary_offset = header_capacity_in_words;
-			compression_header_2->data_length_in_bytes = compressed_bytes;
-			compression_header = compression_header_2;
 		}
-		printf(
-			"compressed: %s,\n"
-			"    dict %16p (len %ld w = %ld B),\n"
-			"    data %16p (len %ld B => %ld w)\n",
-			compression_header->is_compressed ? "True" : "False",
-			actual_result_buffer + compression_header->dictionary_offset,
-			compression_header->dictionary_length,
-			actual_result_buffer + compression_header->dictionary_offset + compression_header->dictionary_length,
-			compression_header->data_length_in_bytes,
-			(compression_header->data_length_in_bytes - 1) / sizeof(unsigned long) + 1
-		);
 	}
 
 	if (returned_words) {

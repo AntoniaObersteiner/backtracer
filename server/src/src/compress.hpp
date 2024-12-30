@@ -23,7 +23,15 @@ typedef struct compression_header_s {
 	unsigned long data_length_in_bytes;
 } compression_header_t;
 
-void create_dictionary (
+ssize_t compress_smart (
+	uint64_t       * c_dictionary_and_compressed,
+	size_t   const   c_dictionary_and_compressed_in_words,
+	uint64_t const * c_raw_data,
+	size_t   const   c_raw_data_in_words,
+	compression_header_t * compression_header_1
+);
+
+size_t create_dictionary (
 	std::span<      uint64_t> const & dictionary,
 	std::span<const uint64_t> const & raw_data
 );

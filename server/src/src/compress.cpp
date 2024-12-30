@@ -16,7 +16,7 @@ extern "C" ssize_t compress_c (
 	uint64_t const c_raw_data [],
 	size_t   const c_raw_data_in_words,
 	uint64_t       c_dictionary [],
-	size_t   const c_dictionary_in_words // expected to be 256
+	size_t   const c_dictionary_in_words
 ) {
 	assert_dictionary_capacity (c_dictionary_in_words);
 
@@ -27,6 +27,80 @@ extern "C" ssize_t compress_c (
 	return compress(compressed, raw_data, dictionary);
 }
 
+ssize_t compress_smart (
+	uint64_t       c_dictionary_and_compressed [], // and header
+	size_t   const c_dictionary_and_compressed_in_words,
+	uint64_t const c_raw_data [],
+	size_t   const c_raw_data_in_words,
+	compression_header_t * compression_header_1
+) {
+	// we will try to compress into this data buffer,
+	// if dictionary + compressed data don't fit, it's not worth it and we return -1.
+	const unsigned long header_capacity_in_words = (sizeof(compression_header_t) - 1) / sizeof(unsigned long) + 1;
+	compression_header_t * compression_header_2 = (compression_header_t *) &c_dictionary_and_compressed[0];
+	uint64_t * c_dictionary = &c_dictionary_and_compressed[header_capacity_in_words];
+
+	if (static_cast<ssize_t>(c_dictionary_and_compressed_in_words) - header_capacity_in_words <= dictionary_capacity) {
+		printf("dictionary_and_compressed is too short for header and dictionary.\n");
+		return -1;
+	}
+
+	std::span const raw_data   {   c_raw_data, c_raw_data_in_words };
+	std::span       dictionary { c_dictionary, dictionary_capacity };
+	const size_t dictionary_length = create_dictionary(dictionary, raw_data);
+
+	uint8_t * c_compressed = reinterpret_cast<uint8_t *> (c_dictionary + dictionary_length);
+	const size_t compressed_capacity_in_bytes = (
+		c_dictionary_and_compressed_in_words
+		- dictionary_length
+		- header_capacity_in_words
+	) * sizeof(unsigned long);
+	std::span compressed { c_compressed, compressed_capacity_in_bytes };
+
+	printf(
+		// first part is printed in caller
+		// "trying to compress\n"
+		// "    btb  %16p (cap %8ld w, len %ld w)\n"
+		"    into %16p (cap %8ld w = %ld B),\n"
+		"    dict %16p (cap %8ld w)\n",
+		c_compressed, compressed_capacity_in_bytes / sizeof(unsigned long), compressed_capacity_in_bytes,
+		c_dictionary, dictionary_length
+	);
+	ssize_t compressed_bytes = compress(compressed, raw_data, dictionary);
+	compression_header_t * actual_compression_header;
+	const uint64_t * actual_result_buffer;
+	if (compressed_bytes < 0) {
+		actual_result_buffer = &c_raw_data[0];
+		// write the header struct it points to
+		compression_header_1->is_compressed = false;
+		compression_header_1->dictionary_length = 0;
+		compression_header_1->dictionary_offset = header_capacity_in_words;
+		compression_header_1->data_length_in_bytes = (c_raw_data_in_words - header_capacity_in_words) * sizeof(unsigned long);
+		actual_compression_header = compression_header_1;
+	} else {
+		actual_result_buffer = &c_dictionary_and_compressed[0];
+		compression_header_2->is_compressed = true;
+		compression_header_2->dictionary_length = dictionary_length;
+		compression_header_2->dictionary_offset = header_capacity_in_words;
+		compression_header_2->data_length_in_bytes = compressed_bytes;
+		actual_compression_header = compression_header_2;
+	}
+	printf(
+		"compressed: %s,\n"
+		"    dict %16p (len %ld w = %ld B),\n"
+		"    data %16p (len %ld B => %ld w)\n",
+		actual_compression_header->is_compressed ? "True" : "False",
+		actual_result_buffer + actual_compression_header->dictionary_offset,
+		actual_compression_header->dictionary_length,
+		actual_compression_header->dictionary_length * sizeof(unsigned long),
+		actual_result_buffer + actual_compression_header->dictionary_offset + actual_compression_header->dictionary_length,
+		actual_compression_header->data_length_in_bytes,
+		(actual_compression_header->data_length_in_bytes - 1) / sizeof(unsigned long) + 1
+	);
+
+	return compressed_bytes;
+}
+
 /**
  * dictionary: fixed-length array, maps u8 compressed index -> u64 raw
  * 	all 00-entries of the dictionary are unused entries.
@@ -34,10 +108,17 @@ extern "C" ssize_t compress_c (
  * 	a byte 00 means: raw is u64(0)
  * 	a byte 01 means: next 8 bytes are not compressed.
  * 	any other: use as index in dictionary
+ *
+ * 	these could be changed, but currently create_dictionary relies on:
+ * 	 zero_marker < raw_marker (both are noted as 0,
+ * 	    compressing 0 would otherwise use the raw marker instead of the zero marker)
+ * 	 raw_marker < all free keys (the used size of the dictionary returned by create_dictionary
+ * 	    could not include one of the two markers, since it is set
+ * 	    with the first dict key that has no dict_heap to fill it)
  */
 static constexpr uint8_t zero_marker = 0x00;
 static constexpr uint8_t  raw_marker = 0x01;
-static constexpr size_t reserved = 2;
+static constexpr size_t marker_reserved = 2;
 
 void assert_dictionary_capacity (const size_t dictionary_size) {
 	if (dictionary_size != dictionary_capacity) {
@@ -63,7 +144,7 @@ public:
 	}
 };
 
-void create_dictionary (
+size_t create_dictionary (
 	std::span<      uint64_t> const & dictionary,
 	std::span<const uint64_t> const & raw_data
 ) {
@@ -86,12 +167,16 @@ void create_dictionary (
 			std::push_heap(dict_heap.begin(), dict_heap.end());
 		}
 
+		// this cutting off of rare words causes slightly worse compression
+		// but spares us a lot of realloc if raw_data is diverse
 		if (dict_heap.size() >= 2 * dictionary.size()) {
 			dict_heap.resize(dictionary.size());
 		}
 	}
 
 	auto entry = dictionary.begin();
+
+	size_t actual_dictionary_used = 0;
 
 	for (; entry < dictionary.end(); ++entry) {
 		uint8_t key = entry - dictionary.begin();
@@ -104,6 +189,9 @@ void create_dictionary (
 			continue;
 		}
 		if (dict_heap.empty()) {
+			if (actual_dictionary_used == 0) {
+				actual_dictionary_used = entry - dictionary.begin();
+			}
 			*entry = 0;
 			continue;
 		}
@@ -114,6 +202,11 @@ void create_dictionary (
 
 		*entry = raw;
 	}
+	if (actual_dictionary_used == 0) {
+		actual_dictionary_used = dictionary.size();
+	}
+
+	return actual_dictionary_used;
 }
 
 ssize_t compress (
