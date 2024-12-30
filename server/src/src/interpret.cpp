@@ -69,7 +69,7 @@ int main(int argc, char * argv []) {
 	auto output_stream = open_output_file(std::string(argv[2]), output_mode);
 
 
-	std::string binaries_list_filename = "./binaries.list";
+	std::string binaries_list_filename = "./data/binaries.list";
 	BinariesList binaries_list { binaries_list_filename };
 
 	for (const auto &[name, path] : binaries_list) {

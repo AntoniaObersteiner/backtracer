@@ -140,7 +140,7 @@ gdb_interpret: interpret $(BUFFER)
 
 	gdb -tui --command=test_interpret.gdb ./interpret
 
-.PHONY: gdb_interpret
+.PHONY: gdb_compress
 gdb_compress: test_compress
 	echo "b main" > test_compress.gdb
 	echo "b compress.cpp:70" > test_compress.gdb
