@@ -264,8 +264,13 @@ export_backtrace_buffer_section (l4_cap_idx_t cap, bool full_section_only, bool 
 		const unsigned long compressed_capacity = (returned_words - dictionary_capacity) * sizeof(unsigned long);
 
 		printf(
-			"trying to compress\n    btb  %16p (cap %ld w, len %ld w)\n    into %16p (cap %ld w),\n    dict %16p (cap %ld w)\n",
-			buffer, buffer_capacity_in_words, returned_words, compressed, compressed_capacity, dictionary, dictionary_capacity
+			"trying to compress\n"
+			"    btb  %16p (cap %8ld w, len %ld w)\n"
+			"    into %16p (cap %8ld w = %ld B),\n"
+			"    dict %16p (cap %8ld w)\n",
+			buffer, buffer_capacity_in_words, returned_words,
+			compressed, compressed_capacity / sizeof(unsigned long), compressed_capacity,
+			dictionary, dictionary_capacity
 		);
 		ssize_t compressed_bytes = compress_c(
 			compressed,
