@@ -37,7 +37,7 @@ int main(void) {
 	l4_debugger_backtracing_start(dbg_cap);
 
 	printf("trace for some time...\n");
-	sleep(1);
+	sleep(10);
 	l4_debugger_backtracing_stop(dbg_cap);
 
 	printf(
