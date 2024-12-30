@@ -302,13 +302,15 @@ export_backtrace_buffer_section (l4_cap_idx_t cap, bool full_section_only, bool 
 			compression_header = compression_header_2;
 		}
 		printf(
-			"compressed: %s,\n    dict %16p (len %ld w = %ld B),\n    data %16p (len %ld B => %ld w)\n",
+			"compressed: %s,\n"
+			"    dict %16p (len %ld w = %ld B),\n"
+			"    data %16p (len %ld B => %ld w)\n",
 			compression_header->is_compressed ? "True" : "False",
 			actual_result_buffer + compression_header->dictionary_offset,
 			compression_header->dictionary_length,
 			actual_result_buffer + compression_header->dictionary_offset + compression_header->dictionary_length,
 			compression_header->data_length_in_bytes,
-			compressed_in_words
+			(compression_header->data_length_in_bytes - 1) / sizeof(unsigned long) + 1
 		);
 	}
 
