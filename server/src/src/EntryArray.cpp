@@ -2,7 +2,22 @@
 
 RawEntryArray::RawEntryArray (const uint64_t * const buffer, const size_t length_in_words) {
 	const uint64_t * current = buffer;
-	while (current - buffer + 4 < length_in_words) {
+	while (true) {
+		if (current - buffer == length_in_words) {
+			return;
+		} else if (current - buffer > length_in_words) {
+			throw std::runtime_error(
+				"the end of the file is not reached exactly, "
+				"it is overshot by an entry by " + std::to_string((current - buffer) - length_in_words) +
+				" words."
+			);
+		} else if (current - buffer + 4 >= length_in_words) {
+			throw std::runtime_error(
+				"the end of the file is not reached exactly, "
+				"there are " + std::to_string(length_in_words - (current - buffer)) +
+				" words remaining."
+			);
+		}
 		#if 1
 		printf(
 			"reading at offset %5ld words (%5ld bytes): type = %3ld, length = %3ld words\n",
