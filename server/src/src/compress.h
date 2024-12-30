@@ -11,4 +11,15 @@ ssize_t compress_c (
 	size_t   const   c_dictionary_in_words // expected to be 256
 );
 
+// added infront of data that is compressed (or not)
+typedef struct compression_header_s {
+	// if true, dictionary follows at dictionary_offset after the start of this struct
+	//  then the compressed data, which needs a byte-size since its end is not word-aligned
+	// if false, dictionary_length is 0 and uncompressed data starts instead of dictionary
+	unsigned long is_compressed;
+	unsigned long dictionary_offset;
+	unsigned long dictionary_length;
+	unsigned long data_length_in_bytes;
+} compression_header_t;
+
 

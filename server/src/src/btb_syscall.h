@@ -214,16 +214,6 @@ void print_backtrace_buffer_section (const unsigned long * buffer, unsigned long
 	print_block(&xor_block, 0);
 }
 
-typedef struct compression_header_s {
-	// if true, dictionary follows at dictionary_offset after the start of this struct
-	//  then the compressed data, which needs a byte-size since its end is not word-aligned
-	// if false, dictionary_length is 0 and uncompressed data starts instead of dictionary
-	unsigned long is_compressed;
-	unsigned long dictionary_offset;
-	unsigned long dictionary_length;
-	unsigned long data_length_in_bytes;
-} compression_header_t;
-
 static inline
 unsigned long
 export_backtrace_buffer_section (l4_cap_idx_t cap, bool full_section_only, bool try_compress) {
