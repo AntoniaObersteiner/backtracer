@@ -21,6 +21,7 @@ CHEADERS:=$(addprefix $S/,\
 
 CXXHEADERS:=$(addprefix $S/,\
 	elfi.hpp \
+	mmap_file.hpp \
 	EntryArray.hpp \
 	EntryDescriptor.hpp \
 	Entry.hpp \
@@ -33,6 +34,7 @@ CXXHEADERS:=$(addprefix $S/,\
 CXXOBJECTS:=$(addprefix $O/,\
 	elfi.o \
 	interpret.o \
+	mmap_file.o \
 	EntryArray.o \
 	EntryDescriptor.o \
 	Entry.o \
