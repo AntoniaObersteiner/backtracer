@@ -1,4 +1,5 @@
 *.cleaned
+*.compressed
 *.btb
 *.interpreted
 *.interpreted.log
@@ -9,6 +10,7 @@
 stderr
 stdout
 unpack
+decompress
 interpret
 test_compress
 data/binaries.list
@@ -17,6 +19,7 @@ data/binaries.list
 test_interpret.gdb
 test_unpack.gdb
 test_compress.gdb
+test_decompress.gdb
 *.elfdump
 *.o
 *.d
