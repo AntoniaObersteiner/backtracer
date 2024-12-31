@@ -42,6 +42,10 @@ ssize_t compress_smart (
 
 	if (static_cast<ssize_t>(c_dictionary_and_compressed_in_words) - header_capacity_in_words <= dictionary_capacity) {
 		printf("dictionary_and_compressed is too short for header and dictionary.\n");
+		compression_header_1->is_compressed = false;
+		compression_header_1->dictionary_length = 0;
+		compression_header_1->dictionary_offset = header_capacity_in_words;
+		compression_header_1->data_length_in_bytes = (c_raw_data_in_words - header_capacity_in_words) * sizeof(unsigned long);
 		return -1;
 	}
 
@@ -85,6 +89,8 @@ ssize_t compress_smart (
 		compression_header_2->data_length_in_bytes = compressed_bytes;
 		actual_compression_header = compression_header_2;
 	}
+
+	size_t data_length_in_words = (actual_compression_header->data_length_in_bytes - 1) / sizeof(unsigned long) + 1;
 	printf(
 		"compressed: %s,\n"
 		"    dict %16p (len %ld w = %ld B),\n"
@@ -95,10 +101,13 @@ ssize_t compress_smart (
 		actual_compression_header->dictionary_length * sizeof(unsigned long),
 		actual_result_buffer + actual_compression_header->dictionary_offset + actual_compression_header->dictionary_length,
 		actual_compression_header->data_length_in_bytes,
-		(actual_compression_header->data_length_in_bytes - 1) / sizeof(unsigned long) + 1
+		data_length_in_words
 	);
 
-	return compressed_bytes;
+	if (compressed_bytes < 0)
+		return compressed_bytes;
+	else
+		return header_capacity_in_words + dictionary_length + data_length_in_words;
 }
 
 /**

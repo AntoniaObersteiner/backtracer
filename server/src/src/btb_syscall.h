@@ -268,21 +268,20 @@ export_backtrace_buffer_section (l4_cap_idx_t cap, bool full_section_only, bool 
 			buffer, buffer_capacity_in_words, returned_words
 			// continued inside compress_smart, different vars are visible inside or outside
 		);
-		ssize_t compressed_bytes = compress_smart(
+		ssize_t compressed_in_words = compress_smart(
 			dictionary_and_compressed,
 			returned_words + header_capacity_in_words,
 			buffer,
 			returned_words,
 			compression_header_1
 		);
-		if (compressed_bytes < 0) {
+		if (compressed_in_words < 0) {
 			// couldn't compress into the given compressed buffer,
 			// leave actual_result_buffer where it is.
 			actual_result_words = header_capacity_in_words + returned_words;
 		} else {
-			unsigned long compressed_in_words = (compressed_bytes - 1) / sizeof(unsigned long) + 1;
 			actual_result_buffer = &dictionary_and_compressed[0];
-			actual_result_words = header_capacity_in_words + dictionary_capacity + compressed_in_words;
+			actual_result_words = compressed_in_words;
 		}
 	}
 
