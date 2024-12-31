@@ -258,10 +258,10 @@ export_backtrace_buffer_section (l4_cap_idx_t cap, bool full_section_only, bool 
 		&remaining_words
 	);
 
-	if (try_compress) {
+	unsigned long dictionary_and_compressed [header_capacity_in_words + returned_words];
+	if (returned_words && try_compress) {
 		// we will try to compress into this data buffer,
-		// if dictionary + compressed data don't fit it's not worth it.
-		unsigned long dictionary_and_compressed [header_capacity_in_words + returned_words];
+		// if dictionary + compressed data don't fit, it's not worth it.
 		printf(
 			"trying to compress\n"
 			"    btb  %16p (cap %8ld w, len %ld w)\n",
