@@ -45,7 +45,7 @@ ssize_t compress_smart (
 		compression_header_1->is_compressed = false;
 		compression_header_1->dictionary_length = 0;
 		compression_header_1->dictionary_offset = header_capacity_in_words;
-		compression_header_1->data_length_in_bytes = (c_raw_data_in_words - header_capacity_in_words) * sizeof(unsigned long);
+		compression_header_1->data_length_in_bytes = c_raw_data_in_words * sizeof(unsigned long);
 		return -1;
 	}
 
