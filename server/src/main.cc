@@ -40,16 +40,16 @@ int main(void) {
 	sleep(10);
 	l4_debugger_backtracing_stop(dbg_cap);
 
+	unsigned long remaining_words;
+	do {
+		remaining_words = export_backtrace_buffer_section(dbg_cap, false, true);
+	} while (remaining_words);
+
 	printf(
 		"====================\n"
 		"== shutting down! ==\n"
 		"====================\n"
 	);
 	l4_platform_ctl_system_shutdown(pfc_cap, 0);
-	unsigned long remaining_words;
-	do {
-		remaining_words = export_backtrace_buffer_section(dbg_cap, false, true);
-	} while (remaining_words);
-
 	printf("everything exported, press Ctrl-A and then X\n");
 }
