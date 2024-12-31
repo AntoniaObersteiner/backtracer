@@ -76,6 +76,7 @@ decompress: $O/decompress.o $O/compress.o $O/mmap_file.o $S/compress.hpp
 .NOTINTERMEDIATE:
 
 $(SAMPLE_RELPATH)/%.traced:
+$D/%.traced:
 $D/%.cleaned:
 $D/%.compressed:
 $D/%.btb:
@@ -95,9 +96,12 @@ $(SAMPLE_PATH)/%.traced:
 		./docker.sh                                               \
 		$*-backtraced
 
+$D/%.traced: $(SAMPLE_PATH)/%.traced
+	cp $< $@
+
 # replaces the control characters by printable representations (e.g. ^M)
-$D/%.cleaned: $(SAMPLE_PATH)/%.traced
-	cat -v $< > $@
+$D/%.cleaned: $D/%.traced
+	cat -v $< | sed 's/\^\[\[[0-9]*m//g' | sed 's/\^M//g' > $@
 
 %.compressed: %.cleaned unpack
 	# unpack the printed hex to the compressed btb format
@@ -109,13 +113,25 @@ $D/%.cleaned: $(SAMPLE_PATH)/%.traced
 
 %.interpreted: %.btb interpret $(BINARY_LIST)
 	# interpret the backtrace buffer binary format and write to $@ file, log to $@.log
-	./interpret $< $@ |& tee $@.log
+	./interpret $< $@
 
 %.folded: %.btb interpret $(BINARY_LIST)
-	./interpret $< $@ |& tee $@.log
+	./interpret $< $@
 
 %.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
 	$(FLAME_GRAPH)/flamegraph.pl $< > $@
+
+$D/%.log:
+	make -f External.make $D/$*.traced
+	make -f External.make \
+		$D/$*.cleaned \
+		$D/$*.compressed \
+		$D/$*.btb \
+		$D/$*.interpreted \
+		$D/$*.folded \
+		$D/$*.svg \
+		|& tee $@
+		
 
 .PHONY: fiasco_config
 fiasco_config:
