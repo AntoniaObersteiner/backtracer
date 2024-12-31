@@ -264,7 +264,7 @@ export_backtrace_buffer_section (l4_cap_idx_t cap, bool full_section_only, bool 
 		// if dictionary + compressed data don't fit, it's not worth it.
 		printf(
 			"trying to compress\n"
-			"    btb  %16p (cap %8ld w, len %ld w)\n",
+			"    btb  %16p (cap %8lx w, len %8lx w)\n",
 			buffer, buffer_capacity_in_words, returned_words
 			// continued inside compress_smart, different vars are visible inside or outside
 		);
@@ -287,7 +287,7 @@ export_backtrace_buffer_section (l4_cap_idx_t cap, bool full_section_only, bool 
 
 	if (returned_words) {
 		printf(
-			"printing buffer %16p, len %ld w = %ld B\n",
+			"printing %16p (len %8lx w =    %8lx B)\n",
 			actual_result_buffer, actual_result_words, actual_result_words * sizeof(unsigned long)
 		);
 		print_backtrace_buffer_section(actual_result_buffer, actual_result_words);

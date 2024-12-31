@@ -65,12 +65,12 @@ ssize_t compress_smart (
 		// first part is printed in caller
 		// "trying to compress\n"
 		// "    btb  %16p (cap %8ld w, len %ld w)\n"
-		"    into %16p (cap %8ld w = %ld B),\n"
-		"    dict %16p (cap %8ld w)\n",
+		"    into %16p (cap %8lx w =    %8lx B),\n"
+		"    dict %16p (cap %8lx w)\n",
 		c_compressed, compressed_capacity_in_bytes / sizeof(unsigned long), compressed_capacity_in_bytes,
 		c_dictionary, dictionary_length
 	);
-	ssize_t compressed_bytes = compress(compressed, raw_data, dictionary);
+	const ssize_t compressed_bytes = compress(compressed, raw_data, dictionary);
 	compression_header_t * actual_compression_header;
 	const uint64_t * actual_result_buffer;
 	if (compressed_bytes < 0) {
@@ -93,8 +93,8 @@ ssize_t compress_smart (
 	size_t data_length_in_words = (actual_compression_header->data_length_in_bytes - 1) / sizeof(unsigned long) + 1;
 	printf(
 		"compressed: %s,\n"
-		"    dict %16p (len %ld w = %ld B),\n"
-		"    data %16p (len %ld B => %ld w)\n",
+		"    dict %16p (len %8lx w =    %8lx B),\n"
+		"    data %16p (len %8lx B =>   %8lx w)\n",
 		actual_compression_header->is_compressed ? "True" : "False",
 		actual_result_buffer + actual_compression_header->dictionary_offset,
 		actual_compression_header->dictionary_length,
