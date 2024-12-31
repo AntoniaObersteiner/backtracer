@@ -33,7 +33,7 @@ int main(void) {
 
 	printf("wait a second...");
 	sleep(1);
-	l4_debugger_backtracing_set_timestep(dbg_cap, 5);
+	l4_debugger_backtracing_set_timestep(dbg_cap, 10);
 	l4_debugger_backtracing_start(dbg_cap);
 
 	printf("trace for some time...\n");
