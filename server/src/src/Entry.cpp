@@ -72,6 +72,7 @@ std::string Entry::folded (
 	}
 
 	std::string result;
+	result += "cpu_" + std::to_string(super().at("cpu_id")) + ";";
 	for (ssize_t i = payload.size() - 1; i >= 0; i--) {
 		std::string symbol_name = get_symbol_name(payload[i], super().at("tsc_time"));
 		result += symbol_name;

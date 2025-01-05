@@ -8,48 +8,87 @@
 
 // TODO: eliminate code duplication with fiasco/src/jdb/jdb_btb.cpp?
 
-enum output_mode_e {
-	raw,
-	folded,
-};
-
-std::ofstream open_output_file (
-	const std::string & output_filename,
-	output_mode_e & output_mode
-) {
-	static const std::regex output_filename_regex { "(.+)\\.(interpreted|folded)" };
-	std::smatch match;
-
-	if (!std::regex_match(output_filename, match, output_filename_regex)) {
-		throw std::runtime_error(
-			"output file '" + output_filename + "' "
-			"does not end in '.interpreted' or '.folded'!"
-		);
-	}
-
-	std::string base_name = match[1].str();
-	std::string ending = match[2].str();
-
-	if (ending == "interpreted") {
-		output_mode = raw;
-	} else if (ending == "folded") {
-		output_mode = folded;
-	} else {
-		throw std::logic_error(
-			"output file '" + output_filename + "' "
-			"does not end in '.interpreted' or '.folded'!"
-		);
-	}
-
-	std::ofstream output_stream {
-		output_filename,
-		std::ios::out
-		| std::ios::trunc
-		| std::ios::binary
+class OutputStreams {
+public:
+	enum output_mode_e {
+		raw,
+		folded,
 	};
+	using cpu_id_t = uint64_t;
+	const struct constructed_s {
+		std::string base_name;
+		std::string ending;
+		output_mode_e output_mode;
+	} constructed;
+	const std::string   & base_name   = constructed.base_name;
+	const std::string   & ending      = constructed.ending;
+	const output_mode_e & output_mode = constructed.output_mode;
 
-	return output_stream;
-}
+private:
+	std::map<cpu_id_t, std::ofstream> streams;
+	std::ofstream common_stream;
+
+public:
+	OutputStreams (
+		const std::string & output_filename
+	) : constructed(split_filename(output_filename)),
+		common_stream(base_name + "." + ending)
+	{}
+
+	std::ofstream & common () {
+		return common_stream;
+	}
+
+	std::ofstream & operator [] (const cpu_id_t cpu_id) {
+		if (!streams.contains(cpu_id))
+			streams.emplace(
+				cpu_id,
+				std::ofstream {
+					base_name + "-" + std::to_string(cpu_id) + "." + ending,
+					std::ios::out
+					| std::ios::trunc
+					| std::ios::binary
+				}
+			);
+
+		return streams.at(cpu_id);
+	}
+
+	static struct constructed_s split_filename (
+		const std::string & output_filename
+	) {
+		static const std::regex output_filename_regex { "(.+)\\.(interpreted|folded)" };
+		std::smatch match;
+
+		if (!std::regex_match(output_filename, match, output_filename_regex)) {
+			throw std::runtime_error(
+				"output file '" + output_filename + "' "
+				"does not end in '.interpreted' or '.folded'!"
+			);
+		}
+
+		output_mode_e output_mode;
+		std::string base_name = match[1].str();
+		std::string ending = match[2].str();
+
+		if (ending == "interpreted") {
+			output_mode = raw;
+		} else if (ending == "folded") {
+			output_mode = folded;
+		} else {
+			throw std::logic_error(
+				"output file '" + output_filename + "' "
+				"does not end in '.interpreted' or '.folded'!"
+			);
+		}
+
+		return {
+			base_name,
+			ending,
+			output_mode
+		};
+	}
+};
 
 Mappings mappings;
 std::map<std::string, SymbolTable> binary_symbols;
@@ -65,9 +104,7 @@ int main(int argc, char * argv []) {
 	if (argc < 3) {
 		throw std::runtime_error("missing args: needs output file (.interpreted/.folded)");
 	}
-	output_mode_e output_mode;
-	auto output_stream = open_output_file(std::string(argv[2]), output_mode);
-
+	OutputStreams output_streams { std::string(argv[2]) };
 
 	std::string binaries_list_filename = "./data/binaries.list";
 	BinariesList binaries_list { binaries_list_filename };
@@ -88,15 +125,21 @@ int main(int argc, char * argv []) {
 	const Entry * previous_entry = nullptr;
 
 	for (const auto & entry : entry_array) {
-		switch (output_mode) {
-		case raw:
-			output_stream
-				<< "read entry:" << std::endl
-				<< entry.to_string() << std::endl;
+		switch (output_streams.output_mode) {
+		case OutputStreams::raw: {
+			std::string output = "read entry: \n" + entry.to_string();
+			output_streams.common()                << output << std::endl;
+			if (entry.at("entry_type") == BTE_STACK) {
+				output_streams[entry.at("cpu_id")] << output << std::endl;
+			}
+		}
 			break;
-		case folded:
-			if (entry.at("entry_type") == BTE_STACK)
-				output_stream << entry.folded(previous_entry) << std::endl;
+		case OutputStreams::folded:
+			if (entry.at("entry_type") == BTE_STACK) {
+				std::string output = entry.folded(previous_entry);
+				output_streams.common()            << output << std::endl;
+				output_streams[entry.at("cpu_id")] << output << std::endl;
+			}
 			break;
 		}
 		previous_entry = &entry;

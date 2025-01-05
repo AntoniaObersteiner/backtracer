@@ -131,6 +131,13 @@ $D/%.log:
 		$D/$*.folded \
 		$D/$*.svg \
 		|& tee $@
+	
+	# making the .folded file also creates the -0.folded, -1.folded, ...
+	# files for all observed cpu ids. we go through these files
+	# and create svgs for them
+	for f in $$(ls $D/*-*.folded); do							  \
+		make -f External.make $${f/folded/svg};					  \
+	done
 		
 
 .PHONY: fiasco_config
