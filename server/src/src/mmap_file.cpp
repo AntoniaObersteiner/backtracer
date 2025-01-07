@@ -32,8 +32,19 @@ void mmap_file(
 		filename.c_str(), buffer_size_in_bytes, buffer_size_in_words
 	);
 
+	// empty file cannot be mmap'ed
+	if (buffer_size_in_bytes == 0) {
+		buffer = nullptr;
+		return;
+	}
+
 	// only needed to create mmap mapping
 	int fd = open(filename.c_str(), O_RDONLY);
+	if (fd < 0) {
+		perror("open");
+		throw std::runtime_error("could not open '" + filename + "'!");
+	}
+
 	void * raw_buffer = mmap(0, buffer_size_in_bytes, PROT_READ, MAP_PRIVATE, fd, 0);
 	close(fd);
 
