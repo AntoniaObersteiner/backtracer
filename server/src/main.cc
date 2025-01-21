@@ -17,6 +17,7 @@
 #include <l4/sys/platform_control.h>
 #include <l4/sys/linkage.h>
 #include <l4/sys/types.h>
+#include <l4/util/rdtsc.h>
 #include <unistd.h>
 
 #include "src/block.h"
@@ -36,7 +37,7 @@ int main(void) {
 	printf("wait a second...");
 	sleep(1);
 
-	l4_debugger_backtracing_set_timestep(dbg_cap, 10);
+	l4_debugger_backtracing_set_timestep(dbg_cap, 100);
 	l4_debugger_backtracing_start(dbg_cap);
 	l4_cpu_time_t time_start = l4_rdtsc ();
 
@@ -50,14 +51,19 @@ int main(void) {
 		remaining_words = export_backtrace_buffer_section(dbg_cap, false, true);
 	} while (remaining_words);
 
+	l4_calibrate_tsc(l4re_kip());
 	l4_uint64_t us_main  = l4_tsc_to_us (time_main);
 	l4_uint64_t us_start = l4_tsc_to_us (time_start);
 	l4_uint64_t us_stop  = l4_tsc_to_us (time_stop);
 
-	printf("abs time main %8lx us\n", us_main);
-	printf("=?=?= [start] %8lx us\n", us_start - us_main);
-	printf("=?=?= [stop]  %8lx us\n", us_stop  - us_main);
-	printf("start to stop %8lx us\n", us_stop  - us_start);
+	printf("abs time main %16llx us\n", us_main);
+	printf("=?=?= [start] %16llx us\n", us_start - us_main);
+	printf("=?=?= [stop]  %16llx us\n", us_stop  - us_main);
+	printf("start to stop %16llx us\n", us_stop  - us_start);
+
+	printf("      [start] %16.3f s\n", double (us_start - us_main)  / 1000000.0);
+	printf("      [stop]  %16.3f s\n", double (us_stop  - us_main)  / 1000000.0);
+	printf("start to stop %16.3f s\n", double (us_stop  - us_start) / 1000000.0);
 
 	printf(
 		"====================\n"
