@@ -56,9 +56,11 @@ int main(void) {
 	l4_uint64_t us_start = l4_tsc_to_us (time_start);
 	l4_uint64_t us_stop  = l4_tsc_to_us (time_stop);
 
+	// we print the start and stop time of the backtracer so we
+	// know that the app did its time measurment in between and was affected.
 	printf("abs time main %16llx us\n", us_main);
-	printf("=?=?= [start] %16llx us\n", us_start - us_main);
-	printf("=?=?= [stop]  %16llx us\n", us_stop  - us_main);
+	printf("=?=?= [start] %16llx us\n", us_start);
+	printf("=?=?= [stop]  %16llx us\n", us_stop);
 	printf("start to stop %16llx us\n", us_stop  - us_start);
 
 	printf("      [start] %16.3f s\n", double (us_start - us_main)  / 1000000.0);
