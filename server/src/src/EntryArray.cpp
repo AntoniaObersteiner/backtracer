@@ -20,8 +20,8 @@ RawEntryArray::RawEntryArray (const uint64_t * const buffer, const size_t length
 		}
 		#if 1
 		printf(
-			"reading at offset %5ld words (%5ld bytes): type = %3ld, length = %3ld words\n",
-			current - buffer, (current - buffer) * sizeof(uint64_t),
+			"reading at offset %5ld words (%5ld bytes) of length %5ld words: type = %3ld, length = %3ld words\n",
+			current - buffer, (current - buffer) * sizeof(uint64_t), length_in_words,
 			*current, *(current + 1)
 		);
 		#endif

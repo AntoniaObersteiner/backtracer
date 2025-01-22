@@ -36,17 +36,17 @@ public:
 		return payload;
 	}
 
-	const unsigned long start_time () const {
+	const unsigned long start_time_ns () const {
 		return self().at("tsc_time");
 	}
-	const unsigned long end_time () const {
+	const unsigned long end_time_ns () const {
 		return self().at("tsc_time") + self().at("tsc_duration");
 	}
 
 	void add_mapping () const;
 	std::string get_symbol_name (
 		unsigned long virtual_address,
-		unsigned long time_in_us
+		unsigned long time_in_ns
 	) const;
 	// return the binaries loaded by task with given id
 	std::string task_binaries (unsigned long task_id) const;

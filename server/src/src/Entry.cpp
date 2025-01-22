@@ -101,8 +101,8 @@ void Entry::add_mapping () const {
 
 std::string Entry::get_symbol_name (
 	unsigned long virtual_address,
-	unsigned long time_in_us
+	unsigned long time_in_ns
 ) const {
 	unsigned long task_id = self().at("task_id");
-	return mappings.lookup_symbol(task_id, virtual_address, time_in_us);
+	return mappings.lookup_symbol(task_id, virtual_address, time_in_ns);
 }

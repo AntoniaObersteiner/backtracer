@@ -35,7 +35,7 @@ void Mapping::dbg () const {
 std::optional<Symbol> Mapping::find_symbol (
 	const SymbolTable & symbol_table,
 	unsigned long virtual_address,
-	unsigned long time_in_us
+	unsigned long time_in_ns
 ) const {
 	if (false) std::cout
 		<< "Mapping[" << name           << ", "
@@ -43,10 +43,10 @@ std::optional<Symbol> Mapping::find_symbol (
 		<< std::hex << lifetime.start() << ", "
 		<< std::hex << lifetime.stop()  << ")]::find_symbol("
 		<< std::hex << virtual_address  << ", "
-		<< std::hex << time_in_us       << ")"
+		<< std::hex << time_in_ns       << ")"
 		<< std::endl;
 
-	if (!lifetime.contains(time_in_us))
+	if (!lifetime.contains(time_in_ns))
 		return std::optional<Symbol>();
 
 	return symbol_table.find_symbol(virtual_address - base);
@@ -99,7 +99,7 @@ std::string Mappings::task_binaries (unsigned long task_id) {
 std::string Mappings::lookup_symbol (
 	unsigned long task_id,
 	unsigned long virtual_address,
-	unsigned long time_in_us
+	unsigned long time_in_ns
 ) {
 	std::optional<Symbol> result;
 	for (const auto & binary : binaries_by_task[task_id]) {
@@ -111,7 +111,7 @@ std::string Mappings::lookup_symbol (
 			);
 		}
 		SymbolTable & symbol_table = binary_symbols[binary];
-		std::optional<Symbol> looked_up = mapping.find_symbol(symbol_table, virtual_address, time_in_us);
+		std::optional<Symbol> looked_up = mapping.find_symbol(symbol_table, virtual_address, time_in_ns);
 		if (!looked_up)
 			continue;
 

@@ -43,7 +43,7 @@ public:
 	std::optional<Symbol> find_symbol (
 		const SymbolTable & symbol_table,
 		unsigned long virtual_address,
-		unsigned long time_in_us
+		unsigned long time_in_ns
 	) const;
 };
 
@@ -71,7 +71,7 @@ public:
 	std::string lookup_symbol (
 		unsigned long task_id,
 		unsigned long virtual_address,
-		unsigned long time_in_us
+		unsigned long time_in_ns
 	);
 
 	void dbg () const;
