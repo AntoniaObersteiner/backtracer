@@ -14,6 +14,7 @@ decompress
 interpret
 test_compress
 data/binaries.list
+menu.lst
 *.swp
 *.swo
 test_interpret.gdb

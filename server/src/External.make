@@ -9,6 +9,7 @@ O=./objects
 # data (intermediate objects and samples
 D=./data
 BASE_PATH=../../../../..
+BUILD_PATH=$(BASE_PATH)/__build__
 
 FLAME_GRAPH:=$(BASE_PATH)/FlameGraph
 ELFIO_PATH:=$(BASE_PATH)/ELFIO
@@ -89,6 +90,9 @@ $O/%.o: $S/%.cpp
 $(BINARY_LIST): $(BINARY_DIR) list_binaries.sh
 	./list_binaries.sh $< $@
 
+$(SAMPLE_PATH)/%.serial:
+	 sudo minicom -D /dev/ttyUSB0 -C $@
+
 $(SAMPLE_PATH)/%.traced:
 	cd $(BASE_PATH) && sudo                                       \
 		OUTPUT=$(subst $(BASE_PATH)/,,$@)                         \
@@ -138,7 +142,33 @@ $D/%.log:
 	for f in $$(ls $D/$*-*.folded); do							  \
 		make -f External.make $${f/folded/svg};					  \
 	done
-		
+
+L4_BINARIES=\
+	$(shell find $(BUILD_PATH)/amd64/l4/bin/amd64_gen/l4f/ -maxdepth 1 -type f) \
+	$(BUILD_PATH)/amd64/fiasco/fiasco \
+	$(BUILD_PATH)/amd64/l4/bin/amd64_gen/plain/bootstrap \
+
+L4_CONFIGS=\
+	$(shell find $(BASE_PATH)/l4/conf/examples/ -name '*-backtraced.cfg')
+
+.PHONY: pxe_install
+pxe_install:
+	make -f External.make pxe_menu
+	# copy all needed modules/config to server:boot/
+	echo "bins: $(L4_BINARIES)"
+	echo "conf: $(L4_CONFIGS)"
+	rsync -avuP \
+		$(L4_BINARIES) \
+		$(L4_CONFIGS) \
+		menu.lst \
+		erwin:boot/
+
+.PHONY: pxe_menu
+pxe_menu:
+	./tools/generate_pxe_menu.py \
+		--output-filename menu.lst \
+		--bins $(L4_BINARIES) \
+		--conf $(L4_CONFIGS)
 
 .PHONY: fiasco_config
 fiasco_config:
