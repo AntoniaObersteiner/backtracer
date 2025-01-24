@@ -49,6 +49,8 @@ CXXOBJECTS:=$(addprefix $O/,\
 CXXDEPENDENCIES := $(addprefix $O/,$(CXXOBJECTS:.o=.d))
 
 MODULE?=qsort
+# directory in data/ to save results to, used to differentiate configurations
+LABEL?=any
 
 SAMPLE_RELPATH=docker_log
 SAMPLE_PATH=$(BASE_PATH)/$(SAMPLE_RELPATH)
@@ -65,7 +67,7 @@ BINARY_LIST=$D/binaries.list
 ELFDUMP=ELFIO/examples/elfdump/elfdump
 
 .PHONY: default
-default: $D/$(MODULE).svg
+default: $D/$(LABEL)/$(MODULE).svg
 
 unpack: $S/unpack.c $(CHEADERS)
 	$(CC) -o $@ $< $(CFLAGS)
@@ -102,11 +104,11 @@ $(SAMPLE_PATH)/%.traced:
 		./docker.sh                                               \
 		$*-backtraced
 
-$D/%.traced: $(SAMPLE_PATH)/%.traced
+$D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 	cp $< $@
 
 # replaces the control characters by printable representations (e.g. ^M)
-$D/%.cleaned: $D/%.traced
+%.cleaned: %.traced
 	cat -v $< | sed 's/\^\[\[[0-9]*m//g' | sed 's/\^M//g' > $@
 
 %.compressed: %.cleaned unpack
@@ -127,21 +129,23 @@ $D/%.cleaned: $D/%.traced
 %.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
 	$(FLAME_GRAPH)/flamegraph.pl $< > $@
 
-$D/%.log:
-	make -f External.make $D/$*.traced
+%.log:
+	# creating the .log is mostly used to make all the intermediates
+	# without throwing them away because of make's rules for intermediate file
+	make -f External.make $*.traced
 	make -f External.make \
-		$D/$*.cleaned \
-		$D/$*.compressed \
-		$D/$*.btb \
-		$D/$*.interpreted \
-		$D/$*.folded \
-		$D/$*.svg \
+		$*.cleaned \
+		$*.compressed \
+		$*.btb \
+		$*.interpreted \
+		$*.folded \
+		$*.svg \
 		|& tee $@
 	
 	# making the .folded file also creates the -0.folded, -1.folded, ...
 	# files for all observed cpu ids. we go through these files
 	# and create svgs for them
-	for f in $$(ls $D/$*-*.folded); do							  \
+	for f in $$(ls $*-*.folded); do								  \
 		make -f External.make $${f/folded/svg};					  \
 	done
 
