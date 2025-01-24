@@ -83,7 +83,7 @@ std::string Entry::folded (
 	uint64_t weight = 1;
 	if (weight_from_time) {
 		if (previous_entry)
-			weight = self().start_time() - previous_entry->end_time();
+			weight = self().start_time_ns() - previous_entry->end_time_ns();
 		else
 			weight = 1;
 	}
