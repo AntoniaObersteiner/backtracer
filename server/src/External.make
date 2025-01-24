@@ -4,6 +4,8 @@ CXX=g++-13
 
 # source directory
 S=./src
+# include directory
+I=../../include
 # build directory (not named ./build, consider fiasco and l4's ./__build__ and /build complexities)
 O=./objects
 # data (intermediate objects and samples
@@ -14,9 +16,9 @@ BUILD_PATH=$(BASE_PATH)/__build__
 FLAME_GRAPH:=$(BASE_PATH)/FlameGraph
 ELFIO_PATH:=$(BASE_PATH)/ELFIO
 
-CFLAGS:= --max-errors=3 -ggdb
-CXXFLAGS:= --max-errors=3 -ggdb --std=c++20 -I$(ELFIO_PATH) -MMD -MP
-CHEADERS:=$(addprefix $S/,\
+CFLAGS:= --max-errors=3 -ggdb -I$I
+CXXFLAGS:= --max-errors=3 -ggdb --std=c++20 -I$(ELFIO_PATH) -I$I -MMD -MP
+CHEADERS:=$(addprefix $I/,\
 	block.h \
 )
 

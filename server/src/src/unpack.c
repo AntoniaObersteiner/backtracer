@@ -4,7 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "block.h"
+#include <block.h>
 
 #define BLOCK_ARRAY_CAPACITY 64
 const bool dbg = true;

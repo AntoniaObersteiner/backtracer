@@ -8,6 +8,7 @@
  * GNU General Public License 2.
  * Please see the COPYING-GPL-2 file for details.
  */
+#pragma once
 #include <stdio.h>
 #include <unistd.h>
 #include <stdbool.h>
