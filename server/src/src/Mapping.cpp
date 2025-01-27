@@ -37,13 +37,14 @@ std::optional<Symbol> Mapping::find_symbol (
 	unsigned long virtual_address,
 	unsigned long time_in_ns
 ) const {
-	if (false) std::cout
+	if (true) std::cout
 		<< "Mapping[" << name           << ", "
-		<< std::hex << task_id          << ", ["
-		<< std::hex << lifetime.start() << ", "
-		<< std::hex << lifetime.stop()  << ")]::find_symbol("
+		<< std::hex << task_id          << ", "
+		<< lifetime.to_string(std::hex) << " = "
+		<< lifetime.to<double>().to_string() << "]::find_symbol("
 		<< std::hex << virtual_address  << ", "
-		<< std::hex << time_in_ns       << ")"
+		<< std::hex << time_in_ns       << " = "
+		<< (double) time_in_ns / 1000000000.0 << ")"
 		<< std::endl;
 
 	if (!lifetime.contains(time_in_ns))

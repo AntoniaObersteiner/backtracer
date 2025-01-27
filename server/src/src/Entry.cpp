@@ -45,6 +45,8 @@ std::string Entry::to_string () const {
 	for (const auto & [name, value] : self()) {
 		if (name == "task_id") {
 			result += std::format("  {:16}: {:16x} {}\n", name, value, task_binaries(value));
+		} else if (name == "tsc_time") {
+			result += std::format("  {:16}: {:16x} {}\n", name, value, static_cast<double>(value) / 1000000000.0);
 		} else {
 			result += std::format("  {:16}: {:16x}\n", name, value);
 		}
