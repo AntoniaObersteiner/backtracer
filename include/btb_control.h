@@ -116,14 +116,19 @@ l4_debugger_backtracing_reset(l4_cap_idx_t cap) L4_NOTHROW {
 }
 
 static inline l4_msgtag_t
-l4_debugger_backtracing_set_timestep(l4_cap_idx_t cap, unsigned long time_step) L4_NOTHROW {
-	return l4_debugger_backtracing_control_2(cap, BTB_CONTROL_SET_TIMESTEP, time_step);
+l4_debugger_backtracing_set_timestep(l4_cap_idx_t cap, l4_uint64_t trace_interval_us) L4_NOTHROW {
+	// assumes tick is 1 ms
+	l4_uint64_t trace_interval_ticks = trace_interval_us / 1000;
+
+	return l4_debugger_backtracing_control_2(cap, BTB_CONTROL_SET_TIMESTEP, trace_interval_ticks);
 }
 
 static inline l4_msgtag_t
-l4_debugger_backtracing_get_timestep(l4_cap_idx_t cap, unsigned long * time_step) L4_NOTHROW {
+l4_debugger_backtracing_get_timestep(l4_cap_idx_t cap, l4_uint64_t * trace_interval_us) L4_NOTHROW {
 	l4_msgtag_t syscall_result = l4_debugger_backtracing_control(cap, BTB_CONTROL_GET_TIMESTEP);
-	*time_step = l4_utcb_mr()->mr[1];
+
+	// assumes tick is 1 ms
+	*trace_interval_us = l4_utcb_mr()->mr[1] * 1000;
 	return syscall_result;
 }
 
