@@ -105,6 +105,7 @@ $(SAMPLE_PATH)/%.traced:
 		$*-backtraced
 
 $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
+	mkdir -p $(@D)
 	cp $< $@
 
 # replaces the control characters by printable representations (e.g. ^M)
