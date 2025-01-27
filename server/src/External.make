@@ -104,6 +104,10 @@ $(SAMPLE_PATH)/%.traced:
 		./docker.sh                                               \
 		$*-backtraced
 
+$D/%.traced: $(SAMPLE_PATH)/%.traced
+	mkdir -p $(@D)
+	cp $< $@
+
 $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 	mkdir -p $(@D)
 	cp $< $@
