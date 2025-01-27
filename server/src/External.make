@@ -154,6 +154,10 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 		make -f External.make $${f/folded/svg};					  \
 	done
 
+.PHONY: copy_results
+copy_results:
+	rsync -avuP data/ ~/mnt/pas/Antonia/STUDIUM/08/GB/data
+
 L4_BINARIES=\
 	$(shell find $(BUILD_PATH)/amd64/l4/bin/amd64_gen/l4f/ -maxdepth 1 -type f) \
 	$(BUILD_PATH)/amd64/fiasco/fiasco \
