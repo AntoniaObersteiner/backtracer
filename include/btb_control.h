@@ -132,6 +132,13 @@ l4_debugger_backtracing_get_timestep(l4_cap_idx_t cap, l4_uint64_t * trace_inter
 	return syscall_result;
 }
 
+static inline l4_msgtag_t
+l4_debugger_backtracing_is_running(l4_cap_idx_t cap, unsigned bool * is_running) L4_NOTHROW {
+	l4_msgtag_t syscall_result = l4_debugger_backtracing_control(cap, BTB_CONTROL_IS_RUNNING);
+	*is_running = l4_utcb_mr()->mr[1];
+	return syscall_result;
+}
+
 static inline
 l4_msgtag_t
 l4_debugger_get_backtrace_buffer_section(
