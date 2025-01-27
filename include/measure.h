@@ -35,8 +35,8 @@ inline l4_uint64_t measure_start (l4_uint64_t wait_us, l4_uint64_t trace_interva
 
 	l4_debugger_backtracing_set_timestep(dbg_cap, trace_interval_ticks);
 	l4_debugger_backtracing_start(dbg_cap);
-	l4_cpu_time_t tsc_start = l4_rdtsc ();
 
+	l4_cpu_time_t tsc_start = l4_rdtsc ();
 	l4_uint64_t us_start = l4_tsc_to_us (tsc_start);
 
 	return us_start;
