@@ -21,14 +21,14 @@
 l4_uint64_t others_control_tracing () {
 	l4_uint64_t us_start = l4_tsc_to_us(l4_rdtsc());
 
-	bool is_running = false;
+	while (!backtracing_is_running()) {
+		printf("backtracing is not yet running, wait...");
+		l4_usleep(1000000); // 100 ms
+	}
 
-	while (true) {
-		l4_debugger_backtracing_is_running(&is_running);
-		if (!is_running)
-			break;
-
-		l4_usleep(100000); // 100 ms
+	while (backtracing_is_running()) {
+		printf("backtracing is still running, wait...");
+		l4_usleep(1000000); // 100 ms
 	}
 
 	return us_start;
@@ -37,7 +37,7 @@ l4_uint64_t others_control_tracing () {
 l4_uint64_t we_control_tracing () {
 	l4_uint64_t us_sleep_before_tracing = 100000;
 	l4_uint64_t us_trace_interval = 100000;
-	l4_uint64_t us_stop = measure_start(us_sleep_before_tracing, us_trace_interval);
+	l4_uint64_t us_start = measure_start(us_sleep_before_tracing, us_trace_interval);
 
 	// how long to let tracing happen before stopping and exporting.
 	sleep(1);

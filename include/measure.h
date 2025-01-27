@@ -29,11 +29,17 @@ inline l4_uint64_t measure_init (void) {
 	return us_init;
 }
 
+inline bool backtracing_is_running (void) {
+	bool is_running = false;
+	l4_debugger_backtracing_is_running(dbg_cap, &is_running);
+	return is_running;
+}
+
 inline l4_uint64_t measure_start (l4_uint64_t wait_us, l4_uint64_t trace_interval_us) {
 	printf("wait for all to settle\n");
 	l4_usleep(wait_us);
 
-	l4_debugger_backtracing_set_timestep(dbg_cap, trace_interval_ticks);
+	l4_debugger_backtracing_set_timestep(dbg_cap, trace_interval_us);
 	l4_debugger_backtracing_start(dbg_cap);
 
 	l4_cpu_time_t tsc_start = l4_rdtsc ();

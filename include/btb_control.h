@@ -27,6 +27,7 @@ enum backtrace_buffer_control {
 	BTB_CONTROL_RESET        = (1 << 2),
 	BTB_CONTROL_SET_TIMESTEP = (1 << 3),
 	BTB_CONTROL_GET_TIMESTEP = (1 << 4),
+	BTB_CONTROL_IS_RUNNING   = (1 << 5),
 };
 
 enum backtrace_buffer_protocol {
@@ -133,7 +134,7 @@ l4_debugger_backtracing_get_timestep(l4_cap_idx_t cap, l4_uint64_t * trace_inter
 }
 
 static inline l4_msgtag_t
-l4_debugger_backtracing_is_running(l4_cap_idx_t cap, unsigned bool * is_running) L4_NOTHROW {
+l4_debugger_backtracing_is_running(l4_cap_idx_t cap, bool * is_running) L4_NOTHROW {
 	l4_msgtag_t syscall_result = l4_debugger_backtracing_control(cap, BTB_CONTROL_IS_RUNNING);
 	*is_running = l4_utcb_mr()->mr[1];
 	return syscall_result;
