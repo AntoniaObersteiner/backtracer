@@ -15,6 +15,7 @@
 
 #include <l4/backtracer/block.h>
 #include <l4/backtracer/measure.h>
+#include <l4/backtracer/measure_defaults.h>
 
 #include "src/btb_export.h"
 
@@ -62,15 +63,26 @@ void try_to_shutdown () {
 int main(void) {
 	l4_uint64_t us_init = measure_init();
 
-	l4_uint64_t us_start = true ? others_control_tracing() : we_control_tracing();
+	l4_uint64_t us_start = (
+		app_controls_tracing
+		? others_control_tracing()
+		: we_control_tracing()
+	);
 	l4_uint64_t us_stop  = measure_stop();
 
-	unsigned long remaining_words;
-	do {
-		remaining_words = export_backtrace_buffer_section(dbg_cap, false, true);
-	} while (remaining_words);
+	l4_uint64_t us_export_start = l4_tsc_to_us(l4_rdtsc());
 
-	measure_print(us_init, us_start, us_stop);
+	unsigned long remaining_words = 1;
+	while (do_export && remaining_words) {
+		remaining_words = export_backtrace_buffer_section(
+			dbg_cap, false, true
+		);
+	}
+
+	l4_uint64_t us_export_stop = l4_tsc_to_us(l4_rdtsc());
+
+	measure_print("backtracer", us_init, us_start, us_stop);
+	measure_print("bt-export", us_init, us_export_start, us_export_stop);
 
 	try_to_shutdown();
 

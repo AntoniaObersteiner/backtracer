@@ -7,7 +7,7 @@
 #include <block.h>
 
 #define BLOCK_ARRAY_CAPACITY 64
-const bool dbg = true;
+const bool dbg = false;
 
 unsigned long get_block_line (
 	char ** block_line,

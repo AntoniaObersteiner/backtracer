@@ -14,7 +14,12 @@
 l4_uint64_t measure_init (void);
 l4_uint64_t measure_start (l4_uint64_t wait_us, l4_uint64_t trace_interval_us);
 l4_uint64_t measure_stop (void);
-void measure_print (l4_uint64_t us_init, l4_uint64_t us_start, l4_uint64_t us_stop);
+void measure_print (
+	const char * program_name,
+	l4_uint64_t us_init,
+	l4_uint64_t us_start,
+	l4_uint64_t us_stop
+);
 
 static const l4_cap_idx_t dbg_cap = L4_BASE_DEBUGGER_CAP;
 
@@ -54,18 +59,30 @@ inline l4_uint64_t measure_stop (void) {
 
 	l4_uint64_t us_stop  = l4_tsc_to_us (tsc_stop);
 
+	bool is_running;
+	l4_debugger_backtracing_is_running(dbg_cap, &is_running);
+	printf(
+		"after stoppping: kernel backtracer is %srunning!",
+		is_running ? "still " : "not "
+	);
+
 	return us_stop;
 }
 
-inline void measure_print (l4_uint64_t us_init, l4_uint64_t us_start, l4_uint64_t us_stop) {
+inline void measure_print (
+	const char * program_name,
+	l4_uint64_t us_init,
+	l4_uint64_t us_start,
+	l4_uint64_t us_stop
+) {
 	// we print the start and stop time of the backtracer so we
-	// know that the app did its time measurment in between and was affected.
+	// know that the app did its time measurement in between and was affected.
 	printf("abs time init %16llx us\n", us_init);
-	printf("=?=?= [start] %16llx us\n", us_start);
-	printf("=?=?= [stop]  %16llx us\n", us_stop);
+	printf("=?=?= [start] (%s) %16llx us\n", program_name, us_start);
+	printf("=?=?= [stop]  (%s) %16llx us\n", program_name, us_stop);
 	printf("start to stop %16llx us\n", us_stop  - us_start);
 
-	printf("      [start] %16.3f s\n", (double) (us_start - us_init)  / 1000000.0);
-	printf("      [stop]  %16.3f s\n", (double) (us_stop  - us_init)  / 1000000.0);
+	printf("      [start] (%s) %16.3f s\n", program_name, (double) (us_start - us_init)  / 1000000.0);
+	printf("      [stop]  (%s) %16.3f s\n", program_name, (double) (us_stop  - us_init)  / 1000000.0);
 	printf("start to stop %16.3f s\n", (double) (us_stop  - us_start) / 1000000.0);
 }
