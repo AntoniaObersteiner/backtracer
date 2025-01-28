@@ -25,6 +25,13 @@ argparser.add_argument(
     help = "run the unit tests of this program and exit.",
 )
 argparser.add_argument(
+    "--plot",
+    action = "store_const",
+    const = True,
+    default = False,
+    help = "generate a plot of the durations of the programs",
+)
+argparser.add_argument(
     "--target",
     choices = ["qemu", "erwin"],
     default = "qemu",
@@ -35,7 +42,7 @@ argparser.add_argument(
     nargs = "+",
     metavar = "Interval",
     type = float,
-    default = [.005, .010, .020, .040, .080],
+    default = [.001, .002, .005, .010, .020, .040, .080],
     help = "tracing intervals in seconds.",
 )
 argparser.add_argument(
@@ -88,6 +95,7 @@ static const int do_overhead = {c_do_overhead};
 // for backtracer/main.cc
 static const int do_export = {c_do_export};
 static const int app_controls_tracing = 1;
+static const int app_prints_steps = 0;
 """
     with open(measure_defaults, "w") as file:
         file.write(text)
@@ -117,7 +125,6 @@ def measure_overhead(app, us_trace_interval, args):
             f"LABEL={label}",
             f"data/{label}/{app}.cleaned",
         )
-
 
     timespans = read_timespans_per_app(f"data/{label}/{app}.cleaned")
     return timespans

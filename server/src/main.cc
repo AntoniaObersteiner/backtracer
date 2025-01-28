@@ -22,14 +22,15 @@
 l4_uint64_t others_control_tracing () {
 	l4_uint64_t us_start = l4_tsc_to_us(l4_rdtsc());
 
+	l4_uint64_t us_sleeptime = 1 * 1000 * 1000; // 1 second
 	while (!backtracing_is_running()) {
 		printf("backtracing is not yet running, wait...");
-		l4_usleep(1000000); // 100 ms
+		l4_usleep(us_sleeptime);
 	}
 
 	while (backtracing_is_running()) {
 		printf("backtracing is still running, wait...");
-		l4_usleep(1000000); // 100 ms
+		l4_usleep(us_sleeptime);
 	}
 
 	return us_start;
