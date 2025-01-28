@@ -134,6 +134,9 @@ start_stop_regex = re.compile(
     r".*=\?=\?= +\[(start|stop)] +"
     r"\((.*)\) +(0x)?([a-fA-F0-9]+) +us.*"
 )
+export_regex = re.compile(
+    r".*<\*= +\[0: ([0-9]+).*].*"
+)
 def read_timespans_per_app(filename):
     # Dict[app: str -> Dict[
     #    start_or_stop: str -> time_value_in_seconds: float
@@ -156,9 +159,106 @@ def read_timespans_per_app(filename):
                     )
 
                 us_time_value = int(m[4], 16)
-                result[app][start_or_stop] = us_time_value * s_from_us
+                result[app][start_or_stop] = round(us_time_value * s_from_us, 6)
+
+            btb_word_number_match = export_regex.match(line)
+            if btb_word_number_match:
+                print(f"matched line {line!r}")
+                btb_word_number = int(btb_word_number_match[1])
+                if "bt-export" not in result:
+                    result["bt-export"] = {}
+                result["bt-export"]["btb_words"] = btb_word_number
 
     return result
+
+def print_timespans(timespans, csv_file = None):
+    if csv_file is not None:
+        print("trace_interval,main_app,part_app,start,stop", file = csv_file)
+
+    for trace_interval, ts1 in timespans.items():
+        for main_app, ts2 in ts1.items():
+            # sanity checks
+            if "backtracer" not in ts2:
+                raise KeyError(
+                    f"{trace_interval = }, {main_app = } has no backtracer span"
+                )
+            bt = ts2["backtracer"]
+            ex = ts2["bt-export"]
+            for part_app in {
+                part_app
+                for part_app in ts2.keys()
+                if part_app != "backtracer" and part_app != "bt-export"
+            }:
+                real = ts2[part_app]
+                assert bt["start"] <= real["start"] < real["stop"] <= bt["stop"]
+            assert bt["stop"] < ex["start"] < ex["stop"]
+
+            for part_app, span in ts2.items():
+                start = span["start"]
+                stop = span["stop"]
+                print(
+                    f"{trace_interval:6.3f} s, {main_app:20}: "
+                    f"{part_app:20} ran {start:8.3f} .. {stop:8.3f} "
+                    f"-> {stop - start:8.3f}"
+                )
+
+                if csv_file is not None:
+                    print(
+                        f"{trace_interval},{main_app},{part_app},{start},{stop}",
+                        file = csv_file
+                    )
+
+def print_btb_words(timespans, csv_file = None):
+    if csv_file is not None:
+        print("trace_interval,app,btb_words", file = csv_file)
+
+    for trace_interval, ts1 in timespans.items():
+        for app, ts2 in ts1.items():
+            ex = ts2["bt-export"]
+            btb_words = ex["btb_words"]
+
+            print(
+                f"{trace_interval:6.3f} s, {app:20}: "
+                f"wrote {btb_words:7} words (u64) of btb"
+            )
+
+            if csv_file is not None:
+                print(
+                    f"{trace_interval},{app},{btb_words}",
+                    file = csv_file
+                )
+
+def plot(csv_filename):
+    import pandas as pd
+    import seaborn as sns
+    from matplotlib import pyplot as plt
+
+    df = pd.read_csv(csv_filename)
+    data = df.query("part_app != 'backtracer' and part_app != 'bt-export'")
+    duration = data["stop"] - data["start"]
+    data.insert(1, "duration", duration)
+    sns.barplot(
+        data = data,
+        x = "part_app",
+        y = "duration",
+        hue = "trace_interval",
+    )
+    print(data)
+    plt.savefig("data/app_duration.svg")
+
+def plot_btb_words(csv_filename):
+    import pandas as pd
+    import seaborn as sns
+    from matplotlib import pyplot as plt
+
+    data = pd.read_csv(csv_filename)
+    sns.barplot(
+        data = data,
+        x = "app",
+        y = "btb_words",
+        hue = "trace_interval",
+    )
+    plt.savefig("data/btb_words.svg")
 
 def test_read_timespans():
     filename = ".test.cleaned"
@@ -202,6 +302,13 @@ def main():
         test()
         return
 
+    timespans = {
+        trace_interval: {
+            app: {}
+            for app in args.apps
+        }
+        for trace_interval in args.trace_intervals
+    }
     for trace_interval in args.trace_intervals:
         write_measure_defaults(
             s_sleep_before_tracing = args.sleep_before_tracing,
@@ -210,12 +317,26 @@ def main():
             do_export = args.flamegraph,
         )
         for app in args.apps:
-            timespans = measure_overhead(
+            timespans[trace_interval][app] = measure_overhead(
                 app,
                 int(1000_000 * trace_interval),
                 args
             )
-            print(timespans)
+
+    csv_filename = "data/timespans.csv"
+    with open(csv_filename, "w") as csv_file:
+        print_timespans(timespans, csv_file)
+
+    if args.plot:
+        plot(csv_filename)
+
+    btb_words_filename = "data/btb_words.csv"
+    with open(btb_words_filename, "w") as csv_file:
+        print_btb_words(timespans, csv_file)
+
+    if args.plot:
+        plot_btb_words(btb_words_filename)
+
 
 if __name__ == "__main__":
     main()
