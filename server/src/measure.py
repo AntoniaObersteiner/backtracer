@@ -125,8 +125,8 @@ def measure_overhead(app, us_trace_interval, args):
             f"data/{label}/{app}.cleaned",
         )
 
-    timespans = read_timespans_per_app(f"data/{label}/{app}.cleaned")
-    return timespans
+    measurements = read_measurements_per_app(f"data/{label}/{app}.cleaned")
+    return measurements
 
 # this is how the measure_print() function of measure.h formats its output
 start_stop_regex = re.compile(
@@ -136,7 +136,7 @@ start_stop_regex = re.compile(
 export_regex = re.compile(
     r".*<\*= +\[0: ([0-9]+).*].*"
 )
-def read_timespans_per_app(filename):
+def read_measurements_per_app(filename):
     # Dict[app: str -> Dict[
     #    start_or_stop: str -> time_value_in_seconds: float
     # ]]
@@ -170,11 +170,11 @@ def read_timespans_per_app(filename):
 
     return result
 
-def print_timespans(timespans, csv_file = None):
+def print_timespans(measurements, csv_file = None):
     if csv_file is not None:
         print("trace_interval,main_app,part_app,start,stop", file = csv_file)
 
-    for trace_interval, ts1 in timespans.items():
+    for trace_interval, ts1 in measurements.items():
         for main_app, ts2 in ts1.items():
             # sanity checks
             if "backtracer" not in ts2:
@@ -207,11 +207,11 @@ def print_timespans(timespans, csv_file = None):
                         file = csv_file
                     )
 
-def print_btb_words(timespans, csv_file = None):
+def print_btb_words(measurements, csv_file = None):
     if csv_file is not None:
         print("trace_interval,app,btb_words", file = csv_file)
 
-    for trace_interval, ts1 in timespans.items():
+    for trace_interval, ts1 in measurements.items():
         for app, ts2 in ts1.items():
             ex = ts2["bt-export"]
             btb_words = ex["btb_words"]
@@ -227,7 +227,7 @@ def print_btb_words(timespans, csv_file = None):
                     file = csv_file
                 )
 
-def plot(csv_filename):
+def plot_app_durations(csv_filename):
     import pandas as pd
     import seaborn as sns
     from matplotlib import pyplot as plt
@@ -259,7 +259,7 @@ def plot_btb_words(csv_filename):
     )
     plt.savefig("data/btb_words.svg")
 
-def test_read_timespans():
+def test_read_measurements():
     filename = ".test.cleaned"
     t1 =    0.123_456
     t2 = 1231.231_231
@@ -275,24 +275,24 @@ def test_read_timespans():
         file.write("=?=?=  [start]  (test-2) " + h3 + "    us\n")
         file.write("qsort | =?=?=   [stop] (test-2) " + h4 + " us\n")
 
-    timespans = read_timespans_per_app(filename)
-    assert "test" in timespans
-    assert "test-2" in timespans
-    assert "start" in timespans["test"]
-    assert "stop"  in timespans["test"]
-    assert "start" in timespans["test-2"]
-    assert "stop"  in timespans["test-2"]
-    assert timespans["test"  ]["start"] == t1
-    assert timespans["test"  ]["stop"]  == t2
-    assert timespans["test-2"]["start"] == t3
-    assert timespans["test-2"]["stop"]  == t4
+    measurements = read_measurements_per_app(filename)
+    assert "test" in measurements
+    assert "test-2" in measurements
+    assert "start" in measurements["test"]
+    assert "stop"  in measurements["test"]
+    assert "start" in measurements["test-2"]
+    assert "stop"  in measurements["test-2"]
+    assert measurements["test"  ]["start"] == t1
+    assert measurements["test"  ]["stop"]  == t2
+    assert measurements["test-2"]["start"] == t3
+    assert measurements["test-2"]["stop"]  == t4
 
     os.remove(filename)
 
-    print("passed test of read_timespans_per_app")
+    print("passed test of read_measurements_per_app")
 
 def test():
-    test_read_timespans()
+    test_read_measurements()
 
 def main():
     args = argparser.parse_args()
@@ -301,7 +301,7 @@ def main():
         test()
         return
 
-    timespans = {
+    measurements = {
         trace_interval: {
             app: {}
             for app in args.apps
@@ -316,22 +316,22 @@ def main():
             do_export = args.flamegraph,
         )
         for app in args.apps:
-            timespans[trace_interval][app] = measure_overhead(
+            measurements[trace_interval][app] = measure_overhead(
                 app,
                 int(1000_000 * trace_interval),
                 args
             )
 
-    csv_filename = "data/timespans.csv"
+    csv_filename = "data/app_durations.csv"
     with open(csv_filename, "w") as csv_file:
-        print_timespans(timespans, csv_file)
+        print_timespans(measurements, csv_file)
 
     if args.plot:
-        plot(csv_filename)
+        plot_app_durations(csv_filename)
 
     btb_words_filename = "data/btb_words.csv"
     with open(btb_words_filename, "w") as csv_file:
-        print_btb_words(timespans, csv_file)
+        print_btb_words(measurements, csv_file)
 
     if args.plot:
         plot_btb_words(btb_words_filename)
