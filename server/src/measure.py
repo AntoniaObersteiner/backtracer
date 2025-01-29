@@ -79,8 +79,8 @@ def write_measure_defaults(
     do_overhead = True,
     do_export = False,
 ):
-    ms_sleep_before_tracing = int(1000 * s_sleep_before_tracing)
-    ms_trace_interval       = int(1000 * s_trace_interval)
+    us_sleep_before_tracing = int(1000_000 * s_sleep_before_tracing)
+    us_trace_interval       = int(1000_000 * s_trace_interval)
 
     # we don't necessarily have stdbool, so use 0 and 1
     c_do_overhead = 1 if do_overhead else 0;
@@ -88,9 +88,8 @@ def write_measure_defaults(
 
     text = f"""
 // this file is written by measure.py to automate overhead measurements
-static const l4_uint64_t ms_to_us = 1000;
-static const l4_uint64_t us_sleep_before_tracing = {ms_sleep_before_tracing} * ms_to_us;
-static const l4_uint64_t us_trace_interval = {ms_trace_interval} * ms_to_us;
+static const l4_uint64_t us_sleep_before_tracing = {us_sleep_before_tracing};
+static const l4_uint64_t us_trace_interval = {us_trace_interval};
 static const int do_overhead = {c_do_overhead};
 // for backtracer/main.cc
 static const int do_export = {c_do_export};
