@@ -234,6 +234,9 @@ def plot_app_durations(csv_filename):
 
     df = pd.read_csv(csv_filename)
     data = df.query("part_app != 'backtracer' and part_app != 'bt-export'")
+
+    data["trace_interval"] = data["trace_interval"].astype(str) # to avoid legend bins
+
     duration = data["stop"] - data["start"]
     data.insert(1, "duration", duration)
     sns.barplot(
@@ -243,7 +246,9 @@ def plot_app_durations(csv_filename):
         hue = "trace_interval",
     )
     print(data)
-    plt.savefig("data/app_duration.svg")
+    plt.savefig("data/app_durations.svg")
+    # clear figure for next plot
+    plt.clf()
 
 def plot_btb_words(csv_filename):
     import pandas as pd
@@ -251,6 +256,9 @@ def plot_btb_words(csv_filename):
     from matplotlib import pyplot as plt
 
     data = pd.read_csv(csv_filename)
+
+    data["trace_interval"] = data["trace_interval"].astype(str) # to avoid legend bins
+
     sns.barplot(
         data = data,
         x = "app",
@@ -258,6 +266,8 @@ def plot_btb_words(csv_filename):
         hue = "trace_interval",
     )
     plt.savefig("data/btb_words.svg")
+    # clear figure for next plot
+    plt.clf()
 
 def test_read_measurements():
     filename = ".test.cleaned"
