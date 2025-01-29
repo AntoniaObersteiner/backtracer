@@ -166,6 +166,19 @@ def read_measurements_per_app(filename):
                 btb_word_number = int(btb_word_number_match[1])
                 if "bt-export" not in result:
                     result["bt-export"] = {}
+                if "btb_words" in result["bt-export"]:
+                    # if there is already a number of words in the measurements,
+                    # we ignore the later numbers, because there might be several
+                    # export steps, and we're only interested in how much there
+                    # was to export the first time
+                    # TODO: this is not very stable, it currently implements a max
+                    if btb_word_number < result["bt-export"]["btb_words"]:
+                        print(
+                            f"the number of words grew again? "
+                            f"{btb_word_number} >= {result['bt-export']['btb_words']}"
+                        )
+                    else:
+                        continue
                 result["bt-export"]["btb_words"] = btb_word_number
 
     return result
@@ -189,8 +202,14 @@ def print_timespans(measurements, csv_file = None):
                 if part_app != "backtracer" and part_app != "bt-export"
             }:
                 real = ts2[part_app]
-                assert bt["start"] <= real["start"] < real["stop"] <= bt["stop"]
-            assert bt["stop"] < ex["start"] < ex["stop"]
+                assert bt["start"] <= real["start"] < real["stop"] <= bt["stop"], (
+                    f"{trace_interval = }, {main_app = }, {part_app = }: " "\n\t"
+                    f"{bt['start'] = } ≤? {real['start'] = } <? {real['stop'] = } ≤? {bt['stop'] = }"
+                )
+            assert bt["stop"] < ex["start"] < ex["stop"], (
+                f"{trace_interval = }, {main_app = }: " "\n\t"
+                f"{bt['stop'] = } <? {ex['start'] = } <? {ex['stop'] = }"
+            )
 
             for part_app, span in ts2.items():
                 start = span["start"]
