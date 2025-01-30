@@ -77,6 +77,8 @@ test_compress: $O/test_compress.o $O/compress.o $S/compress.hpp
 	$(CXX) -o $@ $(filter %.o,$+)
 decompress: $O/decompress.o $O/compress.o $O/mmap_file.o $S/compress.hpp
 	$(CXX) -o $@ $(filter %.o,$+)
+terminator: $O/terminator.o
+	$(CXX) -o $@ $(filter %.o,$+)
 
 .NOTINTERMEDIATE:
 
@@ -97,12 +99,13 @@ $(BINARY_LIST): $(BINARY_DIR) list_binaries.sh
 $(SAMPLE_PATH)/%.serial:
 	 sudo minicom -D /dev/ttyUSB0 -C $@
 
-$(SAMPLE_PATH)/%.traced:
-	cd $(BASE_PATH) && sudo                                       \
-		OUTPUT=$(subst $(BASE_PATH)/,,$@)                         \
-		./start_docker.sh                                         \
-		./docker.sh                                               \
-		$*-backtraced
+$(SAMPLE_PATH)/%.traced: terminator
+	./terminator bash -c '                           \
+	cd $(BASE_PATH) && sudo                          \
+		OUTPUT=$(subst $(BASE_PATH)/,,$@)            \
+		./start_docker.sh                            \
+		./docker.sh                                  \
+		$*-backtraced'
 
 $D/%.traced: $(SAMPLE_PATH)/%.traced
 	mkdir -p $(@D)
