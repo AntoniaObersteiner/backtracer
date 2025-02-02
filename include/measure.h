@@ -14,6 +14,7 @@
 l4_uint64_t measure_init (void);
 l4_uint64_t measure_start (l4_uint64_t wait_us, l4_uint64_t trace_interval_us);
 l4_uint64_t measure_stop (void);
+l4_uint64_t measure_btb_words (void);
 void measure_print (
 	const char * program_name,
 	l4_uint64_t us_init,
@@ -26,7 +27,7 @@ enum measure_format {
 	double_s,
 };
 
-inline void print_measure_line (
+void print_measure_line (
 	const char * program_name,
 	l4_uint64_t us_trace_interval,
 	l4_uint64_t measure_round,
