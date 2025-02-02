@@ -42,7 +42,7 @@ unsigned long print_utcb(
 ) {
 	unsigned long words = l4_msgtag_words(tag);
 	printf(
-		"%s l4_msgtag (%ld, %d, %d, %d) \n",
+		"%s l4_msgtag (%ld, %d, %d, %d) ",
 		prefix,
 		l4_msgtag_label(tag),
 		l4_msgtag_words(tag),
@@ -50,11 +50,11 @@ unsigned long print_utcb(
 		l4_msgtag_flags(tag)
 	);
 
-  printf("%s [", prefix);
+	printf("%s [", prefix);
 	for (unsigned i = 0; i < words; i++) {
 		printf("%d: %ld%s", i, l4_utcb_mr_u(utcb)->mr[i], (i < words - 1) ? ", " : "");
 	}
-  printf("]\n");
+	printf("]\n");
 
 	return words;
 }
