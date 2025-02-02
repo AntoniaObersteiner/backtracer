@@ -14,12 +14,12 @@
 #include <unistd.h>
 
 #include <l4/backtracer/block.h>
-#include <l4/backtracer/measure.h>
 #include <l4/backtracer/measure_defaults.h>
+#include <l4/backtracer/measure.h>
 
 #include "src/btb_export.h"
 
-l4_uint64_t others_control_tracing () {
+static l4_uint64_t others_control_tracing () {
 	l4_uint64_t us_start = l4_tsc_to_us(l4_rdtsc());
 
 	l4_uint64_t us_sleeptime = 1 * 1000 * 1000; // 1 second
@@ -36,7 +36,7 @@ l4_uint64_t others_control_tracing () {
 	return us_start;
 }
 
-l4_uint64_t we_control_tracing () {
+static l4_uint64_t we_control_tracing () {
 	l4_uint64_t us_sleep_before_tracing = 100000;
 	l4_uint64_t us_trace_interval = 100000;
 	l4_uint64_t us_start = measure_start(us_sleep_before_tracing, us_trace_interval);
@@ -47,7 +47,7 @@ l4_uint64_t we_control_tracing () {
 	return us_start;
 }
 
-void try_to_shutdown () {
+static void try_to_shutdown () {
 	l4_cap_idx_t pfc_cap = l4re_env_get_cap("pfc");
 	bool is_valid = l4_is_valid_cap(pfc_cap) > 0;
 	printf(">>> pfc_cap %ld is %svalid <<<\n", pfc_cap, is_valid ? "" : "not ");
@@ -62,6 +62,9 @@ void try_to_shutdown () {
 }
 
 int main(void) {
+	if (!do_export) {
+		return 0;
+	}
 	l4_uint64_t us_init = measure_init();
 
 	l4_uint64_t us_start = (

@@ -100,12 +100,13 @@ $(SAMPLE_PATH)/%.serial:
 	 sudo minicom -D /dev/ttyUSB0 -C $@
 
 $(SAMPLE_PATH)/%.traced: terminator
-	./terminator bash -c '                           \
+	#./terminator bash -c '                           
 	cd $(BASE_PATH) && sudo                          \
 		OUTPUT=$(subst $(BASE_PATH)/,,$@)            \
 		./start_docker.sh                            \
 		./docker.sh                                  \
-		$*-backtraced'
+		$*-backtraced
+	#'
 
 $D/%.traced: $(SAMPLE_PATH)/%.traced
 	mkdir -p $(@D)

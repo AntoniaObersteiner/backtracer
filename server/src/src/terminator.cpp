@@ -186,7 +186,7 @@ void parental_control(int child_read_out_fd, int child_write_in_fd) {
 
 		// if the child did not write a lot, don't wait busily, wait a bit
 		if (bytes_child_out < buffer_length) {
-			usleep(1000); // sets a max throughput of 1000 * buffer_length / second
+			usleep(1000000); // sets a max throughput of 1000 * buffer_length / second
 		}
 	}
 }
