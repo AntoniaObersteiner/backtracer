@@ -11,12 +11,12 @@ Mapping::Mapping (const Entry & entry) : lifetime(Range<>::open_end(0)) {
 	assert_attribute_name(name_chars, payload.size() * sizeof(unsigned long));
 	name = std::string(name_chars);
 
-	base = entry.at("mapping_base");
-	task_id = entry.at("mapping_task_id");
+	base = entry.attribute("mapping_base");
+	task_id = entry.attribute("mapping_task_id");
 
 	// TODO: implement dlclose entry types and respect here
 	lifetime = Range<>::open_end(
-		entry.at("tsc_time")
+		entry.attribute("tsc_time")
 	);
 
 	dbg();

@@ -128,17 +128,17 @@ int main(int argc, char * argv []) {
 		switch (output_streams.output_mode) {
 		case OutputStreams::raw: {
 			std::string output = "read entry: \n" + entry.to_string();
-			output_streams.common()                << output << std::endl;
-			if (entry.at("entry_type") == BTE_STACK) {
-				output_streams[entry.at("cpu_id")] << output << std::endl;
+			output_streams.common()                       << output << std::endl;
+			if (entry.attribute("entry_type") == BTE_STACK) {
+				output_streams[entry.attribute("cpu_id")] << output << std::endl;
 			}
 		}
 			break;
 		case OutputStreams::folded:
-			if (entry.at("entry_type") == BTE_STACK) {
+			if (entry.attribute("entry_type") == BTE_STACK) {
 				std::string output = entry.folded(previous_entry);
 				output_streams.common()            << output << std::endl;
-				output_streams[entry.at("cpu_id")] << output << std::endl;
+				output_streams[entry.attribute("cpu_id")] << output << std::endl;
 			}
 			break;
 		}

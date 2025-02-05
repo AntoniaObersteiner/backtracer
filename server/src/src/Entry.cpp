@@ -52,10 +52,10 @@ std::string Entry::to_string () const {
 		}
 	}
 	for (size_t i = 0; i < payload.size(); i++) {
-		if (self().at("entry_type") == BTE_STACK) {
+		if (attribute("entry_type") == BTE_STACK) {
 			std::string symbol_name = get_symbol_name(payload[i], super().at("tsc_time"));
 			result += std::format("  {:15} : {:16x} {}\n", i, payload[i], symbol_name);
-		} else if (self().at("entry_type") == BTE_MAPPING) {
+		} else if (attribute("entry_type") == BTE_MAPPING) {
 			const char * name = reinterpret_cast<const char *>(&payload[i]);
 			result += std::format("  {:15} : {:16x} {:.8}\n", i, payload[i], name);
 		} else {
@@ -69,7 +69,7 @@ std::string Entry::folded (
 	const Entry * previous_entry,
 	bool weight_from_time
 ) const {
-	if (self().at("entry_type") != BTE_STACK) {
+	if (attribute("entry_type") != BTE_STACK) {
 		throw std::runtime_error("folded can only be called on BTE_STACK entries!");
 	}
 
@@ -105,6 +105,6 @@ std::string Entry::get_symbol_name (
 	unsigned long virtual_address,
 	unsigned long time_in_ns
 ) const {
-	unsigned long task_id = self().at("task_id");
+	unsigned long task_id = attribute("task_id");
 	return mappings.lookup_symbol(task_id, virtual_address, time_in_ns);
 }

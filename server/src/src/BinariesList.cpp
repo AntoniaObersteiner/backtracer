@@ -41,10 +41,10 @@ BinariesList::BinariesList (std::string filename) {
 
 		std::string name = match[1];
 		std::string path = match[2];
-		if (self().contains(name) && self().at(name) != path) {
+		if (super().contains(name) && super().at(name) != path) {
 			throw std::runtime_error(
 				"for binary '" + name + "', "
-				"there already is path '" + self().at(name) + "' "
+				"there already is path '" + super().at(name) + "' "
 				"and now also '" + path + "'?"
 			);
 		}
