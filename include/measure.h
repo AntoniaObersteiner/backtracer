@@ -83,6 +83,9 @@ inline l4_uint64_t measure_stop (void) {
 
 	l4_uint64_t us_stop  = l4_tsc_to_us (tsc_stop);
 
+	// write the histogram of how long differently deep stacks took
+	l4_debugger_backtracing_write_stats(dbg_cap);
+
 	bool is_running;
 	l4_debugger_backtracing_is_running(dbg_cap, &is_running);
 	if (is_running) printf(
@@ -200,8 +203,10 @@ inline int measure_loop(
 		us_stops [trace_interval_index][measure_round] = measure_stop();
 		btb_words[trace_interval_index][measure_round] = measure_btb_words();
 
-		// clear buffer after measuring its content
-		l4_debugger_backtracing_reset(dbg_cap);
+		if (!do_export)
+			// clear buffer after measuring its content
+			// TODO: user is responsible for managing overflow as of now
+			l4_debugger_backtracing_reset(dbg_cap);
 	}
 	}
 

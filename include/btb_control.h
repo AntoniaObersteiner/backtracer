@@ -21,6 +21,7 @@
 #include <sys/mman.h>
 #include "block.h"
 
+#define backtrace_buffer_control_count 7
 enum backtrace_buffer_control {
 	BTB_CONTROL_START        = (1 << 0),
 	BTB_CONTROL_STOP         = (1 << 1),
@@ -28,7 +29,67 @@ enum backtrace_buffer_control {
 	BTB_CONTROL_SET_TIMESTEP = (1 << 3),
 	BTB_CONTROL_GET_TIMESTEP = (1 << 4),
 	BTB_CONTROL_IS_RUNNING   = (1 << 5),
+	BTB_CONTROL_WRITE_STATS  = (1 << 6),
 };
+
+int control_to_int (const enum backtrace_buffer_control control);
+enum backtrace_buffer_control int_to_control (const int i);
+const char * control_to_name (const enum backtrace_buffer_control control);
+void print_control (enum backtrace_buffer_control control, const char * prefix, const char * suffix);
+void print_op_code(l4_uint64_t op_code, const char * prefix, const char * suffix);
+
+const char * backtrace_buffer_control_names [backtrace_buffer_control_count] = {
+	"START",
+	"STOP",
+	"RESET",
+	"SET_TIMESTEP",
+	"GET_TIMESTEP",
+	"IS_RUNNING",
+	"WRITE_STATS",
+};
+
+int control_to_int (const enum backtrace_buffer_control control) {
+	for (int i = 0; i < backtrace_buffer_control_count; i++)
+		if ((1 << i) & control)
+			return i;
+	return -1;
+}
+enum backtrace_buffer_control int_to_control (const int i) {
+	return (enum backtrace_buffer_control) (1 << i);
+}
+const char * control_to_name (const enum backtrace_buffer_control control) {
+	int i = control_to_int(control);
+	if (i == -1)
+		return NULL;
+	return backtrace_buffer_control_names[i];
+}
+void print_control (enum backtrace_buffer_control control, const char * prefix, const char * suffix) {
+	printf("%s", prefix);
+	int i = control_to_int(control);
+	bool first = true;
+	while (i != -1) {
+		if (first)
+			first = false;
+		else
+			printf(" | ");
+
+		printf("%s", backtrace_buffer_control_names[i]);
+		control = (enum backtrace_buffer_control) (control & ~(int_to_control(i)));
+		i = control_to_int(control);
+	}
+	if (first)
+		printf("NONE");
+	printf("%s", suffix);
+}
+void print_op_code(l4_uint64_t op_code, const char * prefix, const char * suffix) {
+	printf("%s", prefix);
+	switch (op_code) {
+	case L4_DEBUGGER_GET_BTB_SECTION: printf("L4_DEBUGGER_GET_BTB_SECTION"); break;
+	case L4_DEBUGGER_BTB_CONTROL:     printf("L4_DEBUGGER_BTB_CONTROL");     break;
+	default:                          printf("<OTHER>");                     break;
+	}
+	printf("%s", suffix);
+}
 
 enum backtrace_buffer_protocol {
 	FULL_SECTION_ONLY = 1,
@@ -38,7 +99,8 @@ static inline
 unsigned long print_utcb(
 	const char * prefix,
 	l4_utcb_t * utcb,
-	l4_msgtag_t tag
+	l4_msgtag_t tag,
+	bool print_enums
 ) {
 	unsigned long words = l4_msgtag_words(tag);
 	printf(
@@ -51,8 +113,19 @@ unsigned long print_utcb(
 	);
 
 	printf("%s [", prefix);
+	l4_umword_t * values = l4_utcb_mr_u(utcb)->mr;
 	for (unsigned i = 0; i < words; i++) {
-		printf("%d: %ld%s", i, l4_utcb_mr_u(utcb)->mr[i], (i < words - 1) ? ", " : "");
+		printf("%d: %6ld", i, values[i]);
+
+		if (print_enums) {
+			if (i == 0)
+				print_op_code(values[i], " (", ")");
+			if (i == 1 && values[0] == L4_DEBUGGER_BTB_CONTROL)
+				print_control((enum backtrace_buffer_control) values[i], " (", ")");
+		}
+
+		if (i < words - 1)
+			printf(", ");
 	}
 	printf("]\n");
 
@@ -70,11 +143,11 @@ l4_debugger_backtracing_control(
 	l4_utcb_mr_u(utcb)->mr[1] = flags;
 	l4_msgtag_t tag = l4_msgtag(0, 2, 0, 0);
 
-	print_utcb("=>>", utcb, tag);
+	print_utcb("=>>", utcb, tag, true);
 
 	l4_msgtag_t syscall_result = l4_invoke_debugger(cap, tag, utcb);
 
-	print_utcb("<<=", utcb, syscall_result);
+	print_utcb("<<=", utcb, syscall_result, false);
 
 	return syscall_result;
 }
@@ -92,11 +165,11 @@ l4_debugger_backtracing_control_2(
 	l4_utcb_mr_u(utcb)->mr[2] = arg;
 	l4_msgtag_t tag = l4_msgtag(0, 3, 0, 0);
 
-	print_utcb("=>>", utcb, tag);
+	print_utcb("=>>", utcb, tag, true);
 
 	l4_msgtag_t syscall_result = l4_invoke_debugger(cap, tag, utcb);
 
-	print_utcb("<<=", utcb, syscall_result);
+	print_utcb("<<=", utcb, syscall_result, false);
 
 	return syscall_result;
 }
@@ -147,6 +220,11 @@ l4_debugger_backtracing_get_btb_words(l4_cap_idx_t cap, l4_uint64_t * btb_words_
 	return syscall_result;
 }
 
+static inline l4_msgtag_t
+l4_debugger_backtracing_write_stats(l4_cap_idx_t cap) L4_NOTHROW {
+	return l4_debugger_backtracing_control(cap, BTB_CONTROL_WRITE_STATS);
+}
+
 static inline
 l4_msgtag_t
 l4_debugger_get_backtrace_buffer_section(
@@ -166,11 +244,11 @@ l4_debugger_get_backtrace_buffer_section(
 	l4_utcb_mr_u(utcb)->mr[4] = flags;
 	l4_msgtag_t tag = l4_msgtag(0, 5, 0, 0);
 
-	print_utcb("=*>", utcb, tag);
+	print_utcb("=*>", utcb, tag, true);
 
 	l4_msgtag_t syscall_result = l4_invoke_debugger(cap, tag, utcb);
 
-	print_utcb("<*=", utcb, syscall_result);
+	print_utcb("<*=", utcb, syscall_result, false);
 
 	if (l4_msgtag_has_error(syscall_result)) {
 		*returned_words = 0;

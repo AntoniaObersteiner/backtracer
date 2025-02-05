@@ -24,12 +24,12 @@ static l4_uint64_t others_control_tracing () {
 
 	l4_uint64_t us_sleeptime = 1 * 1000 * 1000; // 1 second
 	while (!backtracing_is_running()) {
-		printf("backtracing is not yet running, wait...");
+		printf("backtracing is not yet running, wait...\n");
 		l4_usleep(us_sleeptime);
 	}
 
 	while (backtracing_is_running()) {
-		printf("backtracing is still running, wait...");
+		printf("backtracing is still running, wait...\n");
 		l4_usleep(us_sleeptime);
 	}
 
