@@ -135,6 +135,9 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 %.folded: %.btb interpret $(BINARY_LIST)
 	./interpret $< $@
 
+%.histogram: %.btb interpret $(BINARY_LIST)
+	./interpret $< $@
+
 %.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
 	$(FLAME_GRAPH)/flamegraph.pl $< > $@
 

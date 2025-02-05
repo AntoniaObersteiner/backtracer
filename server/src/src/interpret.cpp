@@ -13,8 +13,29 @@ public:
 	enum output_mode_e {
 		raw,
 		folded,
+		histogram,
 	};
+	constexpr static size_t output_mode_count = 3;
+	constexpr static std::string output_mode_endings [output_mode_count] = {
+		"interpreted",
+		"folded",
+		"histogram",
+	};
+	static_assert(output_mode_endings[raw]       == "interpreted");
+	static_assert(output_mode_endings[folded]    == "folded");
+	static_assert(output_mode_endings[histogram] == "histogram");
+	constexpr static std::string output_mode_endings_joined (const std::string sep) {
+		std::string result = "";
+		for (size_t i = 0; i < output_mode_count; i++) {
+			if (i > 0)
+				result += sep;
+			result += output_mode_endings[i];
+		}
+		return result;
+	}
+
 	using cpu_id_t = uint64_t;
+
 	const struct constructed_s {
 		std::string base_name;
 		std::string ending;
@@ -57,13 +78,14 @@ public:
 	static struct constructed_s split_filename (
 		const std::string & output_filename
 	) {
-		static const std::regex output_filename_regex { "(.+)\\.(interpreted|folded)" };
+		static const std::string output_filename_regex_string { "(.+)\\.(" + output_mode_endings_joined("|") + ")" };
+		static const std::regex output_filename_regex { output_filename_regex_string };
 		std::smatch match;
 
 		if (!std::regex_match(output_filename, match, output_filename_regex)) {
 			throw std::runtime_error(
-				"output file '" + output_filename + "' "
-				"does not end in '.interpreted' or '.folded'!"
+				"output filename '" + output_filename + "' "
+				"is not matched by '" + output_filename_regex_string + "'!"
 			);
 		}
 
@@ -71,14 +93,17 @@ public:
 		std::string base_name = match[1].str();
 		std::string ending = match[2].str();
 
-		if (ending == "interpreted") {
-			output_mode = raw;
-		} else if (ending == "folded") {
-			output_mode = folded;
-		} else {
+		size_t output_mode_index;
+		for (output_mode_index = 0; output_mode_index < output_mode_count; output_mode_index++) {
+			if (ending == output_mode_endings[output_mode_index]) {
+				output_mode = static_cast<output_mode_e>(output_mode_index);
+				break;
+			}
+		}
+		if (output_mode_index == output_mode_count) {
 			throw std::logic_error(
-				"output file '" + output_filename + "' "
-				"does not end in '.interpreted' or '.folded'!"
+				"output file '" + output_filename + "' with ending '" + ending + "' "
+				"does not end in '." + output_mode_endings_joined("' or '.") + "'!"
 			);
 		}
 
@@ -139,6 +164,43 @@ int main(int argc, char * argv []) {
 				std::string output = entry.folded(previous_entry);
 				output_streams.common()            << output << std::endl;
 				output_streams[entry.attribute("cpu_id")] << output << std::endl;
+			}
+			break;
+		case OutputStreams::histogram:
+			if (entry.attribute("entry_type") == BTE_STATS) {
+				static size_t hist_counter = 0;
+				if (hist_counter == 0) {
+					std::string output = "hist_counter,depth_min,depth_max,bin,average_time_in_ns\n";
+					output_streams.common()            << output << std::endl;
+					output_streams[entry.attribute("cpu_id")] << output << std::endl;
+				}
+				std::cerr << "running!" << std::endl;
+				const size_t hist_bin_count = entry.attribute("hist_bin_count");
+				const size_t hist_bin_size  = entry.attribute("hist_bin_size");
+				for (size_t bin_index = 0; bin_index < hist_bin_count; bin_index++) {
+					size_t depth_min =  bin_index      * hist_bin_size;
+					size_t depth_max = (bin_index + 1) * hist_bin_size;
+					const auto payload = entry.get_payload();
+					std::cout
+						<< "payload.size(): " << payload.size() << ", "
+						<< "hist_bin_count: " << hist_bin_count << ", "
+						<< "hist_bin_size: "  << hist_bin_size << ", "
+						<< "bin_index: "  << bin_index
+						<< std::endl;
+					size_t bin = payload.at(bin_index);
+					size_t time_in_ns = payload.at(hist_bin_count + bin_index);
+					double average_time_in_ns = static_cast<double>(time_in_ns) / bin;
+					std::string output = (
+						std::to_string(hist_counter) + "," +
+						std::to_string(depth_min)    + "," +
+						std::to_string(depth_max)    + "," +
+						std::to_string(bin)          + "," +
+						std::to_string(average_time_in_ns) + "\n"
+					);
+					output_streams.common()                << output << std::endl;
+					output_streams[entry.attribute("cpu_id")]     << output << std::endl;
+				}
+				hist_counter ++;
 			}
 			break;
 		}
