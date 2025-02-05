@@ -188,6 +188,7 @@ inline int measure_loop(
 
 	puts(csv_header);
 
+	long unsigned int old_btb_words = measure_btb_words();
 	int result = 0; // to avoid optimizing out
 	for (l4_uint64_t trace_interval_index = 0; trace_interval_index <  trace_interval_count; trace_interval_index++) {
 		l4_uint64_t us_trace_interval = us_trace_intervals[trace_interval_index];
@@ -201,7 +202,9 @@ inline int measure_loop(
 		result += workload(workload_arg, workload_round);
 	}
 		us_stops [trace_interval_index][measure_round] = measure_stop();
-		btb_words[trace_interval_index][measure_round] = measure_btb_words();
+		l4_uint64_t new_btb_words = measure_btb_words();
+		btb_words[trace_interval_index][measure_round] = new_btb_words - old_btb_words;
+		old_btb_words = new_btb_words;
 
 		if (!do_export)
 			// clear buffer after measuring its content
