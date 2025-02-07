@@ -87,9 +87,15 @@ EntryDescriptorMap::EntryDescriptorMap (const uint64_t * const buffer, const siz
 	// ignore tsc stuff in +2 and +3
 	// ignore version in +4
 
+	// TODO: remove this code for "version 2", that was just for one trace output and can be discarded now!
+	uint64_t version = *(buffer + 4);
+	size_t padding = 0;
+	if (version == 2)
+		padding = 1;
+
 	uint64_t type_count = *(buffer + 5);
-	const uint64_t * entry_descriptor_lengths       = buffer + 6;
-	const uint64_t * current_entry_descriptor_names = buffer + 6 + type_count;
+	const uint64_t * entry_descriptor_lengths       = buffer + 6 + padding;
+	const uint64_t * current_entry_descriptor_names = buffer + 6 + padding + type_count;
 
 	for (uint64_t i = 0; i < type_count; i++) {
 		if (current_entry_descriptor_names - buffer > length_in_words)
