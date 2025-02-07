@@ -1,4 +1,5 @@
 #include "EntryArray.hpp"
+#include "rethrow_error.hpp"
 
 RawEntryArray::RawEntryArray (const std::span<uint64_t> buffer) {
 	const uint64_t * current = buffer.data();
@@ -36,16 +37,14 @@ RawEntryArray::RawEntryArray (const std::span<uint64_t> buffer) {
 		try {
 			self().push_back(current);
 		} catch (std::exception & e) {
-			throw std::runtime_error(std::format(
-				"there was an error in raw entry number {} @{},\nfirst bytes {:016x} {:016x} {:016x} {:016x}.\n"
-				"caught error: \"{}\"",
+			throw rethrow_error<std::runtime_error>(e, std::format(
+				"there was an error in raw entry number {} @{},\nfirst bytes {:016x} {:016x} {:016x} {:016x}.",
 				self().size(),
 				reinterpret_cast<const void*>(current),
 				*current,
 				*(current + 1),
 				*(current + 2),
-				*(current + 3),
-				e.what()
+				*(current + 3)
 			));
 		}
 		current += length;
@@ -60,16 +59,14 @@ EntryArray::EntryArray (const RawEntryArray & raw_entry_array) {
 			try {
 				entry_descriptor_map.reset(new EntryDescriptorMap { raw_entry_array[i], entry_length });
 			} catch (std::exception & e) {
-				throw std::runtime_error(std::format(
-					"there was an error in entry number {} @{},\nfirst bytes {:016x} {:016x} {:016x} {:016x}.\n"
-					"caught error: \"{}\"",
+				throw rethrow_error<std::runtime_error>(e, std::format(
+					"there was an error in entry number {} @{},\nfirst bytes {:016x} {:016x} {:016x} {:016x}.",
 					i,
 					reinterpret_cast<const void *>(type_ptr),
 					*type_ptr,
 					*(type_ptr + 1),
 					*(type_ptr + 2),
-					*(type_ptr + 3),
-					e.what()
+					*(type_ptr + 3)
 				));
 			}
 			break;
@@ -105,14 +102,12 @@ EntryArray::EntryArray (const RawEntryArray & raw_entry_array) {
 		try {
 			super().emplace_back(raw_entry_array[i], entry_length, *entry_descriptor_map);
 		} catch (std::exception & e) {
-			throw std::runtime_error(std::format(
-				"there was an error in entry number {},\nfirst bytes {:016x} {:016x} {:016x} {:016x}.\n"
-				"caught error: \"{}\"",
+			throw rethrow_error<std::runtime_error>(e, std::format(
+				"there was an error in entry number {},\nfirst bytes {:016x} {:016x} {:016x} {:016x}.",
 				i, *type_ptr,
 				*(type_ptr + 1),
 				*(type_ptr + 2),
-				*(type_ptr + 3),
-				e.what()
+				*(type_ptr + 3)
 			));
 		}
 	}

@@ -5,6 +5,7 @@
 #include "EntryArray.hpp"
 #include "SymbolTable.hpp"
 #include "mmap_file.hpp"
+#include "rethrow_error.hpp"
 
 // TODO: eliminate code duplication with fiasco/src/jdb/jdb_btb.cpp?
 
@@ -216,11 +217,9 @@ int main(int argc, char * argv []) {
 	try {
 		interpret(buffer, binaries_list, output_streams);
 	} catch (std::exception & e) {
-		throw std::runtime_error(std::format(
-			"there was an error in interpreting the data @{}. \n"
-			"caught error: \"{}\"",
-			reinterpret_cast<void *>(buffer.data()),
-			e.what()
+		throw rethrow_error<std::runtime_error>(e, std::format(
+			"there was an error in interpreting the data @{}.",
+			reinterpret_cast<void *>(buffer.data())
 		));
 	}
 	return 0;

@@ -25,6 +25,7 @@ CHEADERS:=$(addprefix $I/,\
 CXXHEADERS:=$(addprefix $S/,\
 	elfi.hpp \
 	mmap_file.hpp \
+	rethrow_error.hpp \
 	EntryArray.hpp \
 	EntryDescriptor.hpp \
 	Entry.hpp \
