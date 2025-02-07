@@ -5,10 +5,8 @@
 #include <stdexcept>
 #include "mmap_file.hpp"
 
-void mmap_file(
-	const std::string & filename,
-	uint64_t * &buffer,
-	size_t &buffer_size_in_words
+const std::span<uint64_t> mmap_file(
+	const std::string & filename
 ) {
 	printf("reading file '%s'\n", filename.c_str());
 
@@ -25,7 +23,7 @@ void mmap_file(
 			+ std::to_string(sizeof(unsigned long)) + " bytes / word)!"
 		);
 	}
-	buffer_size_in_words = buffer_size_in_bytes / sizeof(unsigned long);
+	size_t buffer_size_in_words = buffer_size_in_bytes / sizeof(unsigned long);
 
 	printf(
 		"file '%s' is %ld bytes, %ld words long.\n",
@@ -34,8 +32,7 @@ void mmap_file(
 
 	// empty file cannot be mmap'ed
 	if (buffer_size_in_bytes == 0) {
-		buffer = nullptr;
-		return;
+		return std::span<uint64_t> {};
 	}
 
 	// only needed to create mmap mapping
@@ -53,6 +50,9 @@ void mmap_file(
 		throw std::runtime_error("could not mmap '" + filename + "'!");
 	}
 
-	buffer = reinterpret_cast<uint64_t *>(raw_buffer);
+	return std::span<uint64_t> {
+		reinterpret_cast<uint64_t *>(raw_buffer),
+		buffer_size_in_words
+	};
 }
 

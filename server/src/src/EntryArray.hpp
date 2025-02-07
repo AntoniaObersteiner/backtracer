@@ -10,7 +10,7 @@ class RawEntryArray : public std::vector<const uint64_t *> {
 	Self & self () { return *this; }
 
 public:
-	RawEntryArray (const uint64_t * const buffer, const size_t length_in_words);
+	RawEntryArray (const std::span<uint64_t> buffer);
 };
 
 class EntryArray : public std::vector<Entry> {

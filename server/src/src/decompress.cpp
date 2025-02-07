@@ -51,13 +51,11 @@ int main(int argc, char * argv []) {
 	std::string input_filename { argv[1] };
 	std::string output_filename { argv[2] };
 
-	uint64_t * input_buffer;
-	size_t input_size_in_words;
-	mmap_file(input_filename, input_buffer, input_size_in_words);
+	std::span<uint64_t> input = mmap_file(input_filename);
 
-	const uint64_t * const fixed_start = input_buffer;
+	const uint64_t * const fixed_start = input.data();
 
-	std::span input { input_buffer, input_size_in_words };
+	uint64_t * input_buffer = input.data();
 
 	std::ofstream output_stream {
 		output_filename,
@@ -69,7 +67,7 @@ int main(int argc, char * argv []) {
 	// there are usually several (probably) compressed sections of data,
 	// each with header, dictionary (if compressed) and (compressed) data
 	int section_counter = 0;
-	size_t remaining_input = input_size_in_words - (input_buffer - fixed_start);
+	size_t remaining_input = input.size() - (input_buffer - fixed_start);
 	do {
 		// parse the compression_header
 		const size_t header_capacity_in_words = (sizeof(compression_header_t) - 1) / sizeof(uint64_t) + 1;
@@ -86,7 +84,7 @@ int main(int argc, char * argv []) {
 		const uint64_t * compressed_raw = dictionary_raw + dictionary_length_in_words;
 		const size_t compressed_length_in_bytes = compression_header->data_length_in_bytes;
 
-		if (compressed_raw - fixed_start > input_size_in_words) {
+		if (compressed_raw - fixed_start > input.size()) {
 			printf(
 				"input file %s's section %d (dictionary or data) overflow the file end!\n",
 				input_filename.c_str(), section_counter
@@ -145,14 +143,14 @@ int main(int argc, char * argv []) {
 			fixed_start,
 			next_input_buffer - fixed_start,
 			(next_input_buffer - fixed_start) * sizeof(uint64_t),
-			input_size_in_words - (next_input_buffer - fixed_start),
-			(input_size_in_words - (next_input_buffer - fixed_start)) * sizeof(uint64_t),
-			input_size_in_words,
-			input_size_in_words * sizeof(uint64_t)
+			input.size() - (next_input_buffer - fixed_start),
+			(input.size() - (next_input_buffer - fixed_start)) * sizeof(uint64_t),
+			input.size(),
+			input.size() * sizeof(uint64_t)
 		);
 
 		input_buffer = next_input_buffer;
-		remaining_input = input_size_in_words - (input_buffer - fixed_start);
+		remaining_input = input.size() - (input_buffer - fixed_start);
 	} while (remaining_input > 0);
 
 	printf("done.\n");

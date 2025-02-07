@@ -23,8 +23,11 @@ void assert_attribute_name (
 			return; // found 0-termination
 		} else {
 			throw std::runtime_error(std::format(
-				"encountered char '{}' ({}) in attribute name??",
-				c, int(c)
+				"encountered char '{}' ({}) in attribute name of byte {} / {}, attribute_name @{}, '{}'.",
+				c, int(c),
+				j, size_in_bytes,
+				reinterpret_cast<const void*>(attribute_name),
+				attribute_name
 			));
 		}
 	}

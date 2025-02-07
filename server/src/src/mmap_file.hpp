@@ -1,9 +1,8 @@
 #include <cstdint>
 #include <string>
+#include <span>
 
-void mmap_file(
-	const std::string & filename,
-	uint64_t * &buffer,
-	size_t &buffer_size_in_words
+const std::span<uint64_t> mmap_file(
+	const std::string & filename
 );
 

@@ -118,34 +118,14 @@ public:
 Mappings mappings;
 std::map<std::string, SymbolTable> binary_symbols;
 
-int main(int argc, char * argv []) {
-	// TODO: use argp / similar
+void interpret(
+	const std::span<uint64_t> buffer,
+	const BinariesList & binaries_list,
+	OutputStreams & output_streams
+) {
+	EntryArray entry_array { RawEntryArray { buffer } };
 
-	if (argc < 2) {
-		throw std::runtime_error("missing args: need input file (.btb)");
-	}
-	std::string tracebuffer_filename { argv[1] };
-
-	if (argc < 3) {
-		throw std::runtime_error("missing args: needs output file (.interpreted/.folded)");
-	}
-	OutputStreams output_streams { std::string(argv[2]) };
-
-	std::string binaries_list_filename = "./data/binaries.list";
-	BinariesList binaries_list { binaries_list_filename };
-
-	for (const auto &[name, path] : binaries_list) {
-		binary_symbols.emplace(name, SymbolTable(name, get_elfio_reader(path)));
-	}
-
-	std::cout << std::endl;
-
-	uint64_t * buffer;
-	size_t buffer_size_in_words;
-	mmap_file(tracebuffer_filename, buffer, buffer_size_in_words);
-	printf("buffer: %p\n", buffer);
-
-	EntryArray entry_array(RawEntryArray (buffer, buffer_size_in_words));
+	std::cerr << "successfully read raw data" << std::endl;
 
 	const Entry * previous_entry = nullptr;
 
@@ -206,6 +186,42 @@ int main(int argc, char * argv []) {
 		}
 		previous_entry = &entry;
 	}
+}
 
+int main(int argc, char * argv []) {
+	// TODO: use argp / similar
+
+	if (argc < 2) {
+		throw std::runtime_error("missing args: need input file (.btb)");
+	}
+	std::string tracebuffer_filename { argv[1] };
+
+	if (argc < 3) {
+		throw std::runtime_error("missing args: needs output file (.interpreted/.folded)");
+	}
+	OutputStreams output_streams { std::string(argv[2]) };
+
+	std::string binaries_list_filename = "./data/binaries.list";
+	BinariesList binaries_list { binaries_list_filename };
+
+	for (const auto &[name, path] : binaries_list) {
+		binary_symbols.emplace(name, SymbolTable(name, get_elfio_reader(path)));
+	}
+
+	std::cout << std::endl;
+
+	const std::span<uint64_t> buffer = mmap_file(tracebuffer_filename);
+	printf("buffer: %p\n", buffer.data());
+
+	try {
+		interpret(buffer, binaries_list, output_streams);
+	} catch (std::exception & e) {
+		throw std::runtime_error(std::format(
+			"there was an error in interpreting the data @{}. \n"
+			"caught error: \"{}\"",
+			reinterpret_cast<void *>(buffer.data()),
+			e.what()
+		));
+	}
 	return 0;
 }

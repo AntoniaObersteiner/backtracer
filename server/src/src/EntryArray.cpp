@@ -1,30 +1,34 @@
 #include "EntryArray.hpp"
 
-RawEntryArray::RawEntryArray (const uint64_t * const buffer, const size_t length_in_words) {
-	const uint64_t * current = buffer;
+RawEntryArray::RawEntryArray (const std::span<uint64_t> buffer) {
+	const uint64_t * current = buffer.data();
 	while (true) {
-		if (current - buffer == length_in_words) {
+		auto offset_in_words = [&] () {
+			return current - buffer.data();
+		};
+		if (offset_in_words() == buffer.size()) {
 			return;
-		} else if (current - buffer > length_in_words) {
+		} else if (offset_in_words() > buffer.size()) {
 			throw std::runtime_error(
 				"the end of the file is not reached exactly, "
-				"it is overshot by an entry by " + std::to_string((current - buffer) - length_in_words) +
+				"it is overshot by an entry by " + std::to_string(offset_in_words() - buffer.size()) +
 				" words."
 			);
-		} else if (current - buffer + 4 >= length_in_words) {
+		} else if (offset_in_words() + 4 >= buffer.size()) {
 			throw std::runtime_error(
 				"the end of the file is not reached exactly, "
-				"there are " + std::to_string(length_in_words - (current - buffer)) +
+				"there are " + std::to_string(buffer.size() - offset_in_words()) +
 				" words remaining."
 			);
 		}
-		#if 1
+		#if 0
 		printf(
 			"reading at offset %5ld words (%5ld bytes) of length %5ld words: type = %3ld, length = %3ld words\n",
-			current - buffer, (current - buffer) * sizeof(uint64_t), length_in_words,
+			offset_in_words(), offset_in_words() * sizeof(uint64_t), buffer.size(),
 			*current, *(current + 1)
 		);
 		#endif
+
 		const size_t length = reinterpret_cast<size_t>(*(current + 1));
 		if (length == 0)
 			break;
