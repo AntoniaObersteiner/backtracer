@@ -6,7 +6,9 @@ argparser = argparse.ArgumentParser()
 argparser.add_argument(
     "filename",
 )
-args = argparser.parse_args()
+
+if __name__ == "__main__":
+    args = argparser.parse_args()
 
 import os
 import pandas as pd
