@@ -65,6 +65,9 @@ BINARY_DIR=$(BASE_PATH)/__build__/amd64/l4/bin/amd64_gen/l4f/.debug
 BINARY_LIST=$D/binaries.list
 
 ELFDUMP=ELFIO/examples/elfdump/elfdump
+# with what file output to test ./interpret,
+# see gdb_interpret and similar below
+INTERPRET_TEST_MODE?=interpreted
 
 .PHONY: default
 default: $D/$(LABEL)/$(MODULE).svg
@@ -217,10 +220,19 @@ gdb_unpack: unpack $(CLEANED)
 
 .PHONY: gdb_interpret
 gdb_interpret: interpret $(BUFFER)
-	echo "b main" > test_interpret.gdb
-	echo "run $(BUFFER) $(BUFFER:.btb=.interpreted) > ./stdout 2> ./stderr" >> test_interpret.gdb
+	echo "b main" > test_$(INTERPRET_TEST_MODE).gdb
+	echo "run $(BUFFER) $(BUFFER:.btb=.$(INTERPRET_TEST_MODE)) > ./stdout 2> ./stderr" \
+		>> test_$(INTERPRET_TEST_MODE).gdb
 
-	gdb -tui --command=test_interpret.gdb ./interpret
+	gdb -tui --command=test_$(INTERPRET_TEST_MODE).gdb ./interpret
+
+.PHONY: gdb_folded
+gdb_folded:
+	make -f External.make INTERPRET_TEST_MODE=folded
+
+.PHONY: gdb_histgram
+gdb_histgram:
+	make -f External.make INTERPRET_TEST_MODE=histogram
 
 .PHONY: gdb_compress
 gdb_compress: test_compress
