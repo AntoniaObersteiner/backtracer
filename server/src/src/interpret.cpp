@@ -151,8 +151,8 @@ void interpret(
 			if (entry.attribute("entry_type") == BTE_STATS) {
 				static size_t hist_counter = 0;
 				if (hist_counter == 0) {
-					std::string output = "hist_counter,depth_min,depth_max,bin,average_time_in_ns\n";
-					output_streams.common()            << output << std::endl;
+					std::string output = "hist_counter,depth_min,depth_max,count,average_time_in_ns";
+					output_streams.common()                   << output << std::endl;
 					output_streams[entry.attribute("cpu_id")] << output << std::endl;
 				}
 				std::cerr << "running!" << std::endl;
@@ -162,21 +162,15 @@ void interpret(
 					size_t depth_min =  bin_index      * hist_bin_size;
 					size_t depth_max = (bin_index + 1) * hist_bin_size;
 					const auto payload = entry.get_payload();
-					std::cout
-						<< "payload.size(): " << payload.size() << ", "
-						<< "hist_bin_count: " << hist_bin_count << ", "
-						<< "hist_bin_size: "  << hist_bin_size << ", "
-						<< "bin_index: "  << bin_index
-						<< std::endl;
-					size_t bin = payload.at(bin_index);
+					size_t count = payload.at(bin_index);
 					size_t time_in_ns = payload.at(hist_bin_count + bin_index);
-					double average_time_in_ns = static_cast<double>(time_in_ns) / bin;
+					double average_time_in_ns = count ? static_cast<double>(time_in_ns) / count : 0;
 					std::string output = (
 						std::to_string(hist_counter) + "," +
 						std::to_string(depth_min)    + "," +
 						std::to_string(depth_max)    + "," +
-						std::to_string(bin)          + "," +
-						std::to_string(average_time_in_ns) + "\n"
+						std::to_string(count)        + "," +
+						std::to_string(average_time_in_ns)
 					);
 					output_streams.common()                << output << std::endl;
 					output_streams[entry.attribute("cpu_id")]     << output << std::endl;

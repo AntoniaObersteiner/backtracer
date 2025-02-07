@@ -25,8 +25,8 @@ void assert_attribute_name (
 			return; // found 0-termination
 		} else {
 			throw std::runtime_error(std::format(
-				"encountered char '{}' ({}) as byte {} of {} in attribute name, "
-				"from buffer @{}, offset {}, first word {:016x}. "
+				"encountered char '{}' ({}) as byte {} of {} in attribute name,\n"
+				"from buffer    @{}, offset {}, first word {:016x}.\n"
 				"attribute_name @{}, '{}'.",
 				c, int(c),
 				j, size_in_bytes,
