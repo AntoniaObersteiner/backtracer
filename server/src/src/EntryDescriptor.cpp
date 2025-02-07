@@ -6,7 +6,9 @@
 
 void assert_attribute_name (
 	const char * attribute_name,
-	unsigned long size_in_words
+	unsigned long size_in_words,
+	const uint64_t * buffer,
+	const unsigned long offset
 ) {
 	unsigned long size_in_bytes = sizeof(uint64_t) * size_in_words;
 	for (int j = 0; j < size_in_bytes; j++) {
@@ -23,9 +25,13 @@ void assert_attribute_name (
 			return; // found 0-termination
 		} else {
 			throw std::runtime_error(std::format(
-				"encountered char '{}' ({}) in attribute name of byte {} / {}, attribute_name @{}, '{}'.",
+				"encountered char '{}' ({}) as byte {} of {} in attribute name, "
+				"from buffer @{}, offset {}, first word {}. "
+				"attribute_name @{}, '{}'.",
 				c, int(c),
 				j, size_in_bytes,
+				reinterpret_cast<const void*>(buffer), offset,
+				*buffer,
 				reinterpret_cast<const void*>(attribute_name),
 				attribute_name
 			));
@@ -46,7 +52,7 @@ EntryDescriptor::EntryDescriptor (const uint64_t * const buffer, const uint64_t 
 		attribute_name_numbers[words_per_entry_name] = 0;
 
 		const char * attribute_name = reinterpret_cast<const char *>(&attribute_name_numbers[0]);
-		assert_attribute_name(attribute_name);
+		assert_attribute_name(attribute_name, words_per_entry_name, buffer, offset);
 		std::string name { attribute_name };
 		self()[index] = name;
 		attribute_offsets[name] = index;

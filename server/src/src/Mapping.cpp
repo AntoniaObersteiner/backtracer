@@ -8,7 +8,12 @@ Mapping::Mapping (const Entry & entry) : lifetime(Range<>::open_end(0)) {
 	// read the unsigned ints of the raw data as a character array
 	const std::vector<unsigned long> & payload = entry.get_payload();
 	const char * name_chars = reinterpret_cast<const char *>(payload.data());
-	assert_attribute_name(name_chars, payload.size() * sizeof(unsigned long));
+	assert_attribute_name(
+		name_chars,
+		payload.size() * sizeof(unsigned long),
+		payload.data(),
+		0
+	);
 	name = std::string(name_chars);
 
 	base = entry.attribute("mapping_base");

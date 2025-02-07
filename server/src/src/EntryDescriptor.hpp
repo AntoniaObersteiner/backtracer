@@ -36,7 +36,9 @@ constexpr uint64_t words_per_entry_name = 2;
 
 void assert_attribute_name (
 	const char * attribute_name,
-	unsigned long size_in_words = words_per_entry_name
+	unsigned long size_in_words,
+	const uint64_t * buffer,
+	const unsigned long offset
 );
 
 class EntryDescriptor : public std::vector<std::string> {

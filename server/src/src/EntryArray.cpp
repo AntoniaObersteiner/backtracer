@@ -32,7 +32,22 @@ RawEntryArray::RawEntryArray (const std::span<uint64_t> buffer) {
 		const size_t length = reinterpret_cast<size_t>(*(current + 1));
 		if (length == 0)
 			break;
-		self().push_back(current);
+
+		try {
+			self().push_back(current);
+		} catch (std::exception & e) {
+			throw std::runtime_error(std::format(
+				"there was an error in raw entry number {} @{},\nfirst bytes {:016x} {:016x} {:016x} {:016x}.\n"
+				"caught error: \"{}\"",
+				self().size(),
+				reinterpret_cast<const void*>(current),
+				*current,
+				*(current + 1),
+				*(current + 2),
+				*(current + 3),
+				e.what()
+			));
+		}
 		current += length;
 	}
 }
@@ -42,7 +57,21 @@ EntryArray::EntryArray (const RawEntryArray & raw_entry_array) {
 		const uint64_t * const type_ptr = raw_entry_array[i];
 		const size_t entry_length = reinterpret_cast<size_t>(*(type_ptr + 1));
 		if (*type_ptr == BTE_INFO) {
-			entry_descriptor_map.reset(new EntryDescriptorMap { raw_entry_array[i], entry_length });
+			try {
+				entry_descriptor_map.reset(new EntryDescriptorMap { raw_entry_array[i], entry_length });
+			} catch (std::exception & e) {
+				throw std::runtime_error(std::format(
+					"there was an error in entry number {} @{},\nfirst bytes {:016x} {:016x} {:016x} {:016x}.\n"
+					"caught error: \"{}\"",
+					i,
+					reinterpret_cast<const void *>(type_ptr),
+					*type_ptr,
+					*(type_ptr + 1),
+					*(type_ptr + 2),
+					*(type_ptr + 3),
+					e.what()
+				));
+			}
 			break;
 		}
 	}
@@ -73,8 +102,18 @@ EntryArray::EntryArray (const RawEntryArray & raw_entry_array) {
 		);
 		fflush(stdout);
 		#endif
-		if (*type_ptr != BTE_INFO) {
+		try {
 			super().emplace_back(raw_entry_array[i], entry_length, *entry_descriptor_map);
+		} catch (std::exception & e) {
+			throw std::runtime_error(std::format(
+				"there was an error in entry number {},\nfirst bytes {:016x} {:016x} {:016x} {:016x}.\n"
+				"caught error: \"{}\"",
+				i, *type_ptr,
+				*(type_ptr + 1),
+				*(type_ptr + 2),
+				*(type_ptr + 3),
+				e.what()
+			));
 		}
 	}
 }
