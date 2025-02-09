@@ -1,7 +1,7 @@
 #include "EntryArray.hpp"
 #include "rethrow_error.hpp"
 
-RawEntryArray::RawEntryArray (const std::span<uint64_t> buffer) {
+RawEntryArray::RawEntryArray (const std::span<uint64_t> buffer) : buffer(buffer) {
 	const uint64_t * current = buffer.data();
 	while (true) {
 		auto offset_in_words = [&] () {
@@ -71,11 +71,27 @@ EntryArray::EntryArray (const RawEntryArray & raw_entry_array) {
 			}
 			break;
 		}
+		switch (*type_ptr) {
+		case BTE_STACK:   [[fallthrough]]
+		case BTE_MAPPING: [[fallthrough]]
+		case BTE_CONTROL: [[fallthrough]]
+		case BTE_STATS:
+			continue;
+		default:
+			throw std::runtime_error(std::format(
+				"the entry at {}, {:x} words behind buffer start @{},\n"
+				"has entry type {:x}, which is not recognized by this program.",
+				reinterpret_cast<const void *>(type_ptr),
+				type_ptr - raw_entry_array.buffer.data(),
+				reinterpret_cast<const void *>(raw_entry_array.buffer.data()),
+				*type_ptr
+			));
+		}
 	}
 	if (!entry_descriptor_map) {
 		throw std::runtime_error(
 			"there is no entry descriptor table in the btb. "
-			"but the entry types are not implemented, "
+			"but the entry types are not implemented, \n"
 			"they are read from the buffer itself."
 		);
 	}

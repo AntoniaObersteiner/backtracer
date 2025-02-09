@@ -207,6 +207,12 @@ int main(int argc, char * argv []) {
 
 	const std::span<uint64_t> buffer = mmap_file(tracebuffer_filename);
 	printf("buffer: %p\n", buffer.data());
+	if (buffer.size() == 0) {
+		throw std::runtime_error(std::format(
+			"file '{}' seems to be empty.",
+			tracebuffer_filename
+		));
+	}
 
 	try {
 		interpret(buffer, binaries_list, output_streams);
