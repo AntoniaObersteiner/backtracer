@@ -15,6 +15,12 @@ BUILD_PATH=$(BASE_PATH)/__build__
 
 FLAME_GRAPH:=$(BASE_PATH)/FlameGraph
 ELFIO_PATH:=$(BASE_PATH)/ELFIO
+FLAME_GRAPH_OPTIONS:=\
+	--subtitle "L4/Fiasco Backtracer" \
+	--width 800 \
+	--minwidth 32 \
+
+	#--fonttype "TeX Gyre Schola" \
 
 CFLAGS:= --max-errors=3 -ggdb -I$I
 CXXFLAGS:= --max-errors=3 -ggdb --std=c++20 -I$(ELFIO_PATH) -I$I -MMD -MP
@@ -145,8 +151,17 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 %.histogram.svg: %.histogram ./tools/hist_plot.py
 	./tools/hist_plot.py $<
 
+%.histogram.pdf: %.histogram ./tools/hist_plot.py
+	./tools/hist_plot.py $<
+
 %.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
-	$(FLAME_GRAPH)/flamegraph.pl $< > $@
+	$(FLAME_GRAPH)/flamegraph.pl \
+		$(FLAME_GRAPH_OPTIONS) \
+		--title "Flame Graph $(*F)" \
+		$< > $@
+
+%.pdf: %.svg
+	rsvg-convert -f pdf -o $@ $<
 
 %.log:
 	# creating the .log is mostly used to make all the intermediates
@@ -158,7 +173,11 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 		$*.btb \
 		$*.interpreted \
 		$*.folded \
+		$*.histogram \
 		$*.svg \
+		$*.pdf \
+		$*.histogram.svg \
+		$*.histogram.pdf \
 		|& tee $@
 	
 	# making the .folded file also creates the -0.folded, -1.folded, ...
