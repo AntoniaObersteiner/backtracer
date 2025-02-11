@@ -185,8 +185,8 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 	# and create svgs for them
 	# deactivated because we don't to multi-processor currently
 	# for f in $$(ls $*-*.folded); do								  \
-		make -f External.make $${f/folded/svg};					  \
-	done
+	# 	make -f External.make $${f/folded/svg};					  \
+	# done
 
 .PHONY: rsync_to_pas
 rsync_to_pas:
