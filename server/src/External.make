@@ -106,8 +106,11 @@ $O/%.o: $S/%.cpp
 $(BINARY_LIST): $(BINARY_DIR) list_binaries.sh
 	./list_binaries.sh $< $@
 
-$(SAMPLE_PATH)/%.serial:
-	 sudo minicom -D /dev/ttyUSB0 -C $@
+%.serial:
+	sudo minicom -D /dev/ttyUSB0 -C $@
+
+#%.traced: %.serial
+	#cp $< $@
 
 $(SAMPLE_PATH)/%.traced: terminator
 	#./terminator bash -c '                           
