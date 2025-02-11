@@ -188,9 +188,13 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 		make -f External.make $${f/folded/svg};					  \
 	done
 
-.PHONY: copy_results
-copy_results:
+.PHONY: rsync_to_pas
+rsync_to_pas:
 	rsync -avuP data/ ~/mnt/pas/Antonia/STUDIUM/08/GB/data
+
+.PHONY: rsync_to_oz
+rsync_to_oz:
+	rsync -avuP data oz:Antonia/STUDIUM/os/fl4mer/
 
 L4_BINARIES=\
 	$(shell find $(BUILD_PATH)/amd64/l4/bin/amd64_gen/l4f/ -maxdepth 1 -type f) \
