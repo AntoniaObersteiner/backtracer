@@ -63,6 +63,9 @@ std::string Entry::to_string () const {
 		} else if (attribute("entry_type") == BTE_MAPPING) {
 			const char * name = reinterpret_cast<const char *>(&payload[i]);
 			result += std::format("  {:15} : {:16x} {:.8}\n", i, payload[i], name);
+		} else if (attribute("entry_type") == BTE_INFO && i >= attribute("type_count")) {
+			const char * name = reinterpret_cast<const char *>(&payload[i]);
+			result += std::format("  {:15} : {:16x} {:.8}\n", i, payload[i], name);
 		} else {
 			result += std::format("  {:15} : {:16x}\n", i, payload[i]);
 		}

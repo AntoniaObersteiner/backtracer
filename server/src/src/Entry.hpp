@@ -52,14 +52,19 @@ public:
 				"access to field '{}' is invalid.",
 				attribute_key, super().at("entry_type"), super().at("tsc_time")
 			));
-		else
-			throw std::out_of_range(std::format(
-				"access to field '{}' in entry of type '{}' ({}) with timestamp '{}' is invalid.",
-				attribute_key,
-				entry_type_name(static_cast<entry_types>(super().at("entry_type"))),
-				super().at("entry_type"),
-				super().at("tsc_time")
-			));
+
+		// because of the special status of BTE_INFO, cpu_id could not easily be added to it.
+		// but we can just assume it's cpu 0, shouldn't really matter
+		if (attribute("entry_type") == BTE_INFO && attribute_key == "cpu_id")
+			return 0;
+
+		throw std::out_of_range(std::format(
+			"access to field '{}' in entry of type '{}' ({}) with timestamp '{}' is invalid.",
+			attribute_key,
+			entry_type_name(static_cast<entry_types>(super().at("entry_type"))),
+			super().at("entry_type"),
+			super().at("tsc_time")
+		));
 	}
 
 	void add_mapping () const;
