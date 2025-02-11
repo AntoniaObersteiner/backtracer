@@ -29,10 +29,13 @@ def generate_entry(conf, bins, confs):
     output += f"kernel $(BOOT)/bootstrap -modaddr 0x01100000\n"
     output += f"module $(BOOT)/fiasco -serial_esc\n"
     output += f"module $(BOOT)/moe rom/{conf}\n"
+    output += f"module $(BOOT)/l4re\n"
     output += f"module $(BOOT)/{conf}\n"
 
     bins = set(bins)
-    bins -= {"fiasco", "bootstrap", "moe"}
+    bins -= {"fiasco", "bootstrap", "moe", "l4re"}
+    bins = list(bins)
+    bins.sort()
 
     for bin in bins:
         output += f"module $(BOOT)/{bin}\n"
