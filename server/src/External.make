@@ -183,7 +183,8 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 	# making the .folded file also creates the -0.folded, -1.folded, ...
 	# files for all observed cpu ids. we go through these files
 	# and create svgs for them
-	for f in $$(ls $*-*.folded); do								  \
+	# deactivated because we don't to multi-processor currently
+	# for f in $$(ls $*-*.folded); do								  \
 		make -f External.make $${f/folded/svg};					  \
 	done
 

@@ -49,12 +49,15 @@ public:
 private:
 	std::map<cpu_id_t, std::ofstream> streams;
 	std::ofstream common_stream;
+	bool do_multi_processor;
 
 public:
 	OutputStreams (
-		const std::string & output_filename
+		const std::string & output_filename,
+		const bool do_multi_processor
 	) : constructed(split_filename(output_filename)),
-		common_stream(base_name + "." + ending)
+		common_stream(base_name + "." + ending),
+		do_multi_processor(do_multi_processor)
 	{}
 
 	std::ofstream & common () {
@@ -74,6 +77,12 @@ public:
 			);
 
 		return streams.at(cpu_id);
+	}
+
+	void line (const std::string & text, uint64_t cpu_id, bool also_to_multi_processor_stream = true) {
+		common() << text << std::endl;
+		if (do_multi_processor && also_to_multi_processor_stream)
+			(*this)[cpu_id] << text << std::endl;
 	}
 
 	static struct constructed_s split_filename (
@@ -134,17 +143,13 @@ void interpret(
 		switch (output_streams.output_mode) {
 		case OutputStreams::raw: {
 			std::string output = "read entry: \n" + entry.to_string();
-			output_streams.common()                       << output << std::endl;
-			if (entry.attribute("entry_type") == BTE_STACK) {
-				output_streams[entry.attribute("cpu_id")] << output << std::endl;
-			}
+			output_streams.line(output, entry.attribute("cpu_id"), entry.attribute("entry_type") == BTE_STACK);
 		}
 			break;
 		case OutputStreams::folded:
 			if (entry.attribute("entry_type") == BTE_STACK) {
 				std::string output = entry.folded(previous_entry);
-				output_streams.common()            << output << std::endl;
-				output_streams[entry.attribute("cpu_id")] << output << std::endl;
+				output_streams.line(output, entry.attribute("cpu_id"));
 			}
 			break;
 		case OutputStreams::histogram:
@@ -152,8 +157,7 @@ void interpret(
 				static size_t hist_counter = 0;
 				if (hist_counter == 0) {
 					std::string output = "hist_counter,depth_min,depth_max,count,average_time_in_ns";
-					output_streams.common()                   << output << std::endl;
-					output_streams[entry.attribute("cpu_id")] << output << std::endl;
+					output_streams.line(output, entry.attribute("cpu_id"));
 				}
 				std::cerr << "running!" << std::endl;
 				const size_t hist_bin_count = entry.attribute("hist_bin_count");
@@ -172,8 +176,7 @@ void interpret(
 						std::to_string(count)        + "," +
 						std::to_string(average_time_in_ns)
 					);
-					output_streams.common()                << output << std::endl;
-					output_streams[entry.attribute("cpu_id")]     << output << std::endl;
+					output_streams.line(output, entry.attribute("cpu_id"));
 				}
 				hist_counter ++;
 			}
@@ -194,7 +197,7 @@ int main(int argc, char * argv []) {
 	if (argc < 3) {
 		throw std::runtime_error("missing args: needs output file (.interpreted/.folded)");
 	}
-	OutputStreams output_streams { std::string(argv[2]) };
+	OutputStreams output_streams { std::string(argv[2]), false };
 
 	std::string binaries_list_filename = "./data/binaries.list";
 	BinariesList binaries_list { binaries_list_filename };
