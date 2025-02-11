@@ -79,8 +79,7 @@ void Mappings::append (const Entry & entry) {
 }
 
 void Mappings::add_kernel_mapping (const unsigned long task_id) {
-	super().emplace_back("KERNEL", 0, task_id, Range<>::open_end(0));
-	Mapping & mapping = super()[super().size() - 1];
+	Mapping & mapping = super().emplace_back("KERNEL", 0, task_id, Range<>::open_end(0));
 	by_task_and_binary[std::make_pair(mapping.name, mapping.task_id)] = super().size() - 1;
 	binaries_by_task[mapping.task_id].emplace_back(mapping.name);
 }
