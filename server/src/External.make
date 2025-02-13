@@ -112,14 +112,12 @@ $(BINARY_LIST): $(BINARY_DIR) list_binaries.sh
 #%.traced: %.serial
 	#cp $< $@
 
-$(SAMPLE_PATH)/%.traced: terminator
-	#./terminator bash -c '                           
+$(SAMPLE_PATH)/%.traced:
 	cd $(BASE_PATH) && sudo                          \
 		OUTPUT=$(subst $(BASE_PATH)/,,$@)            \
 		./start_docker.sh                            \
 		./docker.sh                                  \
 		$*-backtraced
-	#'
 
 $D/%.traced: $(SAMPLE_PATH)/%.traced
 	mkdir -p $(@D)
