@@ -163,6 +163,12 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 		--title "Flame Graph $(*F)" \
 		$< > $@
 
+%.fine.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
+	$(FLAME_GRAPH)/flamegraph.pl \
+		--subtitle "L4/Fiasco Backtracer" \
+		--title "Flame Graph $(*F)" \
+		$< > $@
+
 %.pdf: %.svg
 	rsvg-convert -f pdf -o $@ $<
 
@@ -178,6 +184,7 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 		$*.folded \
 		$*.histogram \
 		$*.svg \
+		$*.fine.svg \
 		$*.pdf \
 		$*.histogram.svg \
 		$*.histogram.pdf \
