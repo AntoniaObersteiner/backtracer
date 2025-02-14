@@ -12,9 +12,12 @@ if __name__ == "__main__":
 
 import os
 import pandas as pd
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
+import matplotlib.patches as mpatches
+from copy import deepcopy
 
 def make_estimator(data, unit):
     counts    = data["count"]
@@ -85,7 +88,7 @@ def make_lang(unit_text):
     }
     return de
 
-def do_style():
+def do_style(legend_facecolor = None):
     try:
         plt.style.use('seaborn-v0_8')
     except OSError:
@@ -96,6 +99,8 @@ def do_style():
         #"font.family" : "serif",
         "font.serif" : ["Computer Modern Serif"] + plt.rcParams["font.serif"],
         "font.sans-serif" : ["TeX Gyre Schola"] + plt.rcParams["font.sans-serif"],
+        "legend.facecolor": legend_facecolor if legend_facecolor is not None else "inherit",
+        "legend.frameon": legend_facecolor != None,
     }
     plt.rcParams.update(params)
 
@@ -112,14 +117,15 @@ def from_raw_durations():
 
     # remove empty bins from the end
     max_depth = data["stack_depth"].max()
+    min_depth = data["stack_depth"].min()
 
     linear_estimator, linear_estimator_description = make_estimator_from_raw(data, unit)
 
     # make sure there are roughly 10 x-axis ticks
-    tick_step = max_depth // 11 + 1
+    tick_step = (max_depth - min_depth) // 11 + 1
 
     lang = make_lang(unit_text)
-    do_style()
+    do_style(legend_facecolor = "white")
 
     # make background, so grid is behind bars but matches duration ticks
     ax_bg = sns.boxplot(
@@ -130,14 +136,16 @@ def from_raw_durations():
         width = .6,
     )
 
+    depths = np.array(range(min_depth, max_depth + 1))
+    counts = [
+        data.query(f"stack_depth == {depth}").shape[0]
+        for depth in depths
+    ]
     # plot backtround histogram of how many stacks per bin
     ax_bar = ax_bg.twinx()
     sns.barplot(
-        x = list(range(max_depth)),
-        y = [
-            data.query(f"stack_depth == {depth}").shape[0]
-            for depth in range(max_depth)
-        ],
+        x = depths,
+        y = counts,
         ax = ax_bar,
         label = lang["llabel"],
     )
@@ -145,8 +153,8 @@ def from_raw_durations():
     # make another plot in front for linear regression
     ax_est = ax_bg.twinx()
     sns.lineplot(
-        x = data["stack_depth"],
-        y = linear_estimator(data["stack_depth"]),
+        x = depths - min_depth,
+        y = linear_estimator(depths),
         ax = ax_est,
         color = "black",
         label = lang["elabel"],
@@ -164,6 +172,7 @@ def from_raw_durations():
         ax = ax_dot,
         #label = lang["rlabel"],
     )
+
     layout_and_export(
         ax_bg,
         ax_bar,
@@ -185,6 +194,7 @@ def layout_and_export(
 ):
     ax_bar.set_ymargin(.3)
     ax_dot.set_ylim(bottom = 0)
+    ax_dot.set_ylim(top = 40)
     ax_bar.xaxis.set_major_locator(mticker.MultipleLocator(tick_step))
     ax_bg .set_ybound(ax_dot.get_ybound())
     ax_est.set_ybound(ax_dot.get_ybound())
@@ -209,7 +219,13 @@ def layout_and_export(
 
     h1,l1 = ax_bar.get_legend_handles_labels()
     h2,l2 = ax_dot.get_legend_handles_labels()
+    if not h2:
+        h2 = [mpatches.Patch(color = "orange")]
+        l2 = [lang["rlabel"]]
     h3,l3 = ax_est.get_legend_handles_labels()
+    print(f"{h1 = }, {l1 = }")
+    print(f"{h2 = }, {l2 = }")
+    print(f"{h3 = }, {l3 = }")
     ax_dot.legend(
         handles = h1 + h2 + h3,
         labels  = l1 + l2 + l3,
