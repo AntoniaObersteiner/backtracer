@@ -89,7 +89,10 @@ def main():
     }
     lang = de
 
-    plt.style.use('seaborn-v0_8')
+    try:
+        plt.style.use('seaborn-v0_8')
+    except OSError:
+        plt.style.use('seaborn')
     # print(plt.rcParams.keys())
     params = {
         "text.usetex" : False,
@@ -169,8 +172,11 @@ def main():
         handles = h1 + h2 + h3,
         labels  = l1 + l2 + l3,
     )
-    ax_bar.get_legend().remove()
-    ax_est.get_legend().remove()
+    try:
+        ax_bar.get_legend().remove()
+        ax_est.get_legend().remove()
+    except:
+        pass
 
     for ending in ["svg", "pdf"]:
         output_filename = args.filename + "." + ending
