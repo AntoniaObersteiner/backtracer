@@ -76,6 +76,6 @@ public:
 	std::string task_binaries (unsigned long task_id) const;
 
 	std::string to_string () const;
-	std::string folded (const Entry * previous_entry, bool weight_from_time = true) const;
+	std::string folded (const Entry * previous_entry, bool with_cpu_id, bool weight_from_time = true) const;
 };
 

@@ -64,6 +64,10 @@ public:
 		return common_stream;
 	}
 
+	bool does_multi_processor () const {
+		return do_multi_processor;
+	}
+
 	std::ofstream & operator [] (const cpu_id_t cpu_id) {
 		if (!streams.contains(cpu_id))
 			streams.emplace(
@@ -148,7 +152,7 @@ void interpret(
 			break;
 		case OutputStreams::folded:
 			if (entry.attribute("entry_type") == BTE_STACK) {
-				std::string output = entry.folded(previous_entry);
+				std::string output = entry.folded(previous_entry, output_streams.does_multi_processor());
 				output_streams.line(output, entry.attribute("cpu_id"));
 			}
 			break;

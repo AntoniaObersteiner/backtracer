@@ -75,6 +75,7 @@ std::string Entry::to_string () const {
 
 std::string Entry::folded (
 	const Entry * previous_entry,
+	bool with_cpu_id,
 	bool weight_from_time
 ) const {
 	if (attribute("entry_type") != BTE_STACK) {
@@ -82,7 +83,8 @@ std::string Entry::folded (
 	}
 
 	std::string result;
-	result += "cpu_" + std::to_string(super().at("cpu_id")) + ";";
+	if (with_cpu_id)
+		result += "cpu_" + std::to_string(super().at("cpu_id")) + ";";
 	for (ssize_t i = payload.size() - 1; i >= 0; i--) {
 		std::string symbol_name = get_symbol_name(payload[i], super().at("tsc_time"));
 		result += symbol_name;
