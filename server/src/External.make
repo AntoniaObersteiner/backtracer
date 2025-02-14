@@ -223,8 +223,6 @@ L4_CONFIGS=\
 pxe_install:
 	make -f External.make pxe_menu
 	# copy all needed modules/config to server:boot/
-	echo "bins: $(L4_BINARIES)"
-	echo "conf: $(L4_CONFIGS)"
 	rsync -avuP \
 		$(L4_BINARIES) \
 		$(L4_CONFIGS) \
