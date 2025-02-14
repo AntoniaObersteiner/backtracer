@@ -64,6 +64,9 @@ const char * control_to_name (const enum backtrace_buffer_control control) {
 	return backtrace_buffer_control_names[i];
 }
 void print_control (enum backtrace_buffer_control control, const char * prefix, const char * suffix) {
+	if (quiet)
+		return;
+
 	printf("%s", prefix);
 	int i = control_to_int(control);
 	bool first = true;
@@ -102,6 +105,9 @@ unsigned long print_utcb(
 	l4_msgtag_t tag,
 	bool print_enums
 ) {
+	if (quiet)
+		return;
+
 	unsigned long words = l4_msgtag_words(tag);
 	printf(
 		"%s l4_msgtag (%ld, %d, %d, %d) ",

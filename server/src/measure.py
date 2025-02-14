@@ -112,6 +112,8 @@ static const int do_overhead = {c_do_overhead};
 static const int do_export = {c_do_export};
 static const int app_controls_tracing = 1;
 static const int app_prints_steps = 0;
+// no syscall debugging infos, no backtracer debugging infos
+static const int quiet = 1;
 """
     with open(measure_defaults, "w") as file:
         file.write(text)

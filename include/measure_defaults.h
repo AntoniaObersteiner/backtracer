@@ -9,3 +9,6 @@ static const int do_overhead = 1;
 static const int do_export = 1;
 static const int app_controls_tracing = 1;
 static const int app_prints_steps = 0;
+// no syscall debugging infos, no backtracer debugging infos
+static const int quiet = 1;
+
