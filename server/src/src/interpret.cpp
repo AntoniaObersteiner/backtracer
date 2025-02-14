@@ -199,7 +199,10 @@ int main(int argc, char * argv []) {
 	std::string tracebuffer_filename { argv[1] };
 
 	if (argc < 3) {
-		throw std::runtime_error("missing args: needs output file (.interpreted/.folded)");
+		throw std::runtime_error(std::format(
+			"missing args: needs output file (.{})",
+			OutputStreams::output_mode_endings_joined("/.")
+		));
 	}
 	OutputStreams output_streams { std::string(argv[2]), false };
 

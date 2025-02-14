@@ -2,6 +2,7 @@
 #include "rethrow_error.hpp"
 
 RawEntryArray::RawEntryArray (const std::span<uint64_t> buffer) : buffer(buffer) {
+	const uint64_t * previous = buffer.data();
 	const uint64_t * current = buffer.data();
 	while (true) {
 		auto offset_in_words = [&] () {
@@ -10,11 +11,14 @@ RawEntryArray::RawEntryArray (const std::span<uint64_t> buffer) : buffer(buffer)
 		if (offset_in_words() == buffer.size()) {
 			return;
 		} else if (offset_in_words() > buffer.size()) {
-			throw std::runtime_error(
+			throw std::runtime_error(std::format(
 				"the end of the file is not reached exactly, "
-				"it is overshot by an entry by " + std::to_string(offset_in_words() - buffer.size()) +
-				" words."
-			);
+				"from entry @{}, offset {}. \n"
+				"overshoots end by {} words.",
+				reinterpret_cast<const void *>(previous),
+				previous - buffer.data(),
+				offset_in_words() - buffer.size()
+			));
 		} else if (offset_in_words() + 4 >= buffer.size()) {
 			throw std::runtime_error(
 				"the end of the file is not reached exactly, "
@@ -47,6 +51,7 @@ RawEntryArray::RawEntryArray (const std::span<uint64_t> buffer) : buffer(buffer)
 				*(current + 3)
 			));
 		}
+		previous = current;
 		current += length;
 	}
 }
