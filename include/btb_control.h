@@ -99,7 +99,7 @@ enum backtrace_buffer_protocol {
 };
 
 static inline
-unsigned long print_utcb(
+void print_utcb(
 	const char * prefix,
 	l4_utcb_t * utcb,
 	l4_msgtag_t tag,
@@ -134,8 +134,6 @@ unsigned long print_utcb(
 			printf(", ");
 	}
 	printf("]\n");
-
-	return words;
 }
 
 static inline
