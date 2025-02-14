@@ -119,6 +119,13 @@ $(SAMPLE_PATH)/%.traced:
 		./docker.sh                                  \
 		$*-backtraced
 
+.PHONY: build
+build:
+	cd $(BASE_PATH) && sudo                          \
+		./start_docker.sh                            \
+		./docker.sh                                  \
+		__build__
+
 $D/%.traced: $(SAMPLE_PATH)/%.traced
 	mkdir -p $(@D)
 	cp $< $@
