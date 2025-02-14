@@ -156,10 +156,13 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 %.histogram: %.btb interpret $(BINARY_LIST)
 	./interpret $< $@
 
+%.durations: %.btb interpret $(BINARY_LIST)
+	./interpret $< $@
+
 %.histogram.svg: %.histogram ./tools/hist_plot.py
 	./tools/hist_plot.py $<
 
-%.histogram.pdf: %.histogram ./tools/hist_plot.py
+%.durations.svg: %.durations ./tools/hist_plot.py
 	./tools/hist_plot.py $<
 
 %.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl

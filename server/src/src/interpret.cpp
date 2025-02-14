@@ -15,16 +15,19 @@ public:
 		raw,
 		folded,
 		histogram,
+		durations,
 	};
-	constexpr static size_t output_mode_count = 3;
+	constexpr static size_t output_mode_count = 4;
 	constexpr static std::string output_mode_endings [output_mode_count] = {
 		"interpreted",
 		"folded",
 		"histogram",
+		"durations",
 	};
 	static_assert(output_mode_endings[raw]       == "interpreted");
 	static_assert(output_mode_endings[folded]    == "folded");
 	static_assert(output_mode_endings[histogram] == "histogram");
+	static_assert(output_mode_endings[durations] == "durations");
 	constexpr static std::string output_mode_endings_joined (const std::string sep) {
 		std::string result = "";
 		for (size_t i = 0; i < output_mode_count; i++) {
@@ -163,7 +166,6 @@ void interpret(
 					std::string output = "hist_counter,depth_min,depth_max,count,average_time_in_ns";
 					output_streams.line(output, entry.attribute("cpu_id"));
 				}
-				std::cerr << "running!" << std::endl;
 				const size_t hist_bin_count = entry.attribute("hist_bin_count");
 				const size_t hist_bin_size  = entry.attribute("hist_bin_size");
 				for (size_t bin_index = 0; bin_index < hist_bin_count; bin_index++) {
@@ -183,6 +185,22 @@ void interpret(
 					output_streams.line(output, entry.attribute("cpu_id"));
 				}
 				hist_counter ++;
+			}
+			break;
+		case OutputStreams::durations:
+			if (entry.attribute("entry_type") == BTE_STACK) {
+				static size_t durations_counter = 0;
+				if (durations_counter == 0) {
+					std::string output = "timer_step,stack_depth,ns_duration";
+					output_streams.line(output, entry.attribute("cpu_id"));
+				}
+				std::string output = (
+					std::to_string(entry.attribute("timer_step"))   + "," +
+					std::to_string(entry.attribute("stack_depth"))  + "," +
+					std::to_string(entry.attribute("tsc_duration"))
+				);
+				output_streams.line(output, entry.attribute("cpu_id"));
+				durations_counter ++;
 			}
 			break;
 		}
