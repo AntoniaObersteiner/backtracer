@@ -183,17 +183,30 @@ def savefig (
     # clear figure for next plot
     plt.clf()
 
-def plot_app_durations(data):
+def plot_app_durations(
+    data,
+    trace_interval_selection = {-1, 0, .001, .01}
+):
     data = data.query("program != 'backtracer' and program != 'bt-export'")
+    data = data.query(" or ".join(
+        f"trace_interval == {selection}"
+        for selection in trace_interval_selection
+    ))
 
-    data["trace_interval"] = data["trace_interval"].astype(str) # to avoid legend bins
+    data["ms_trace_interval"] = data["trace_interval"] * 1000
+    # to avoid legend bins
+    data["ms_trace_interval"] = data["ms_trace_interval"].astype(int).astype(str)
+    data["ms_trace_interval"].replace(to_replace = "-1", value = "nicht aktiv")
+    data["ms_trace_interval"].replace(to_replace = "0", value = "nicht kompiliert")
 
-    sns.barplot(
+    plot = sns.barplot(
         data = data,
         x = "program",
         y = "duration",
-        hue = "trace_interval",
+        hue = "ms_trace_interval",
     )
+    legend = plot.legend()
+    legend.set_title("Trace Interval [ms]")
     print(data)
     savefig("data/app_durations.svg")
 
