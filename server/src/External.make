@@ -175,6 +175,7 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 	$(FLAME_GRAPH)/flamegraph.pl \
 		--subtitle "L4/Fiasco Backtracer" \
 		--title "Flame Graph $(*F)" \
+		--minwidth 8 \
 		$< > $@
 
 %.pdf: %.svg
@@ -191,11 +192,14 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 		$*.interpreted \
 		$*.folded \
 		$*.histogram \
+		$*.durations \
 		$*.svg \
 		$*.fine.svg \
 		$*.pdf \
 		$*.histogram.svg \
 		$*.histogram.pdf \
+		$*.durations.svg \
+		$*.durations.pdf \
 		|& tee $@
 	
 	# making the .folded file also creates the -0.folded, -1.folded, ...
@@ -293,12 +297,14 @@ gdb_decompress: test_compress $(COMPRESSED)
 
 	gdb -tui --command=test_decompress.gdb ./decompress
 
-$(ELFDUMP):
+$(BASE_PATH)/$(ELFDUMP):
 	cd $(BASE_PATH)/ELFIO/; cmake .
 	make -C $(BASE_PATH)/ELFIO/ elfdump
 
-$O/fiasco.elfdump: $(ELFDUMP)
-	$(ELFDUMP) __build__/amd64/fiasco/fiasco.debug | tee $@
+$O/fiasco.elfdump: $(BASE_PATH)/$(ELFDUMP)
+	target=$$(pwd)/$@; \
+	cd $(BASE_PATH); \
+		$(ELFDUMP) __build__/amd64/fiasco/fiasco.debug | tee $$target
 
 $O/%.disas:
 	export link=$$(readlink $(BINARY_DIR)/$*)             && \
