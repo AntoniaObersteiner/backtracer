@@ -52,7 +52,7 @@ argparser.add_argument(
     nargs = "+",
     metavar = "Interval",
     type = float,
-    default = [.001, .002, .005, .010, .020, .040, .080],
+    default = [.001, .010, 0],
     help = "tracing intervals in seconds.",
 )
 argparser.add_argument(
@@ -77,6 +77,11 @@ argparser.add_argument(
     default = False,
     help = "don't just measure overhead, also export data and plot",
 )
+argparser.add_argument(
+    "--label",
+    default = "measure_loop",
+    help = "which subdir of data/ to use. default: 'measure_loop'",
+)
 
 package_root = os.path.join("..", "..")
 measure_defaults = os.path.join(package_root, "include", "measure_defaults.h")
@@ -85,7 +90,7 @@ s_from_us = .000_001
 
 def write_measure_defaults(
     s_sleep_before_tracing = 0.120,
-    s_trace_intervals = [0.001, 0.002, 0.005, 0.010,],
+    s_trace_intervals = [0.001, 0.010, 0],
     measure_rounds = 10,
     do_overhead = True,
     do_export = False,
@@ -126,7 +131,7 @@ def make_external(*args):
         raise OSError(return_code, command)
 
 def measure_overhead(app, args):
-    label = f"measure_loop"
+    label = args.label
     if args.target == "erwin":
         raise NotImplementedError(
             f"using target 'erwin' (i.e. pxe-boot) "
@@ -208,7 +213,7 @@ def plot_app_durations(
     legend = plot.legend()
     legend.set_title("Trace Interval [ms]")
     print(data)
-    savefig("data/app_durations.svg")
+    savefig(f"data/{args.label}/app_durations.svg")
 
 def plot_btb_words(data):
     data["trace_interval"] = data["trace_interval"].astype(str) # to avoid legend bins
@@ -220,7 +225,7 @@ def plot_btb_words(data):
         #y = "btb [u64 words]",
         hue = "trace_interval",
     )
-    savefig("data/btb_words.svg")
+    savefig(f"data/{args.label}/btb_words.svg")
 
 def main():
     args = argparser.parse_args()
@@ -241,7 +246,7 @@ def main():
         for app in args.apps
     )
 
-    csv_filename = "data/measurements.csv"
+    csv_filename = f"data/{args.label}/measurements.csv"
     with open(csv_filename, "w") as csv_file:
         measurements.to_csv(csv_file)
 

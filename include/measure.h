@@ -70,8 +70,10 @@ inline l4_uint64_t measure_start (l4_uint64_t wait_us, l4_uint64_t trace_interva
 		printf("wait for all to settle\n");
 	l4_usleep(wait_us);
 
-	l4_debugger_backtracing_set_timestep(dbg_cap, trace_interval_us);
-	l4_debugger_backtracing_start(dbg_cap);
+	if (trace_interval_us) {
+		l4_debugger_backtracing_set_timestep(dbg_cap, trace_interval_us);
+		l4_debugger_backtracing_start(dbg_cap);
+	}
 
 	l4_cpu_time_t tsc_start = l4_rdtsc ();
 	l4_uint64_t us_start = l4_tsc_to_us (tsc_start);
@@ -86,7 +88,8 @@ inline l4_uint64_t measure_stop (void) {
 	l4_uint64_t us_stop  = l4_tsc_to_us (tsc_stop);
 
 	// write the histogram of how long differently deep stacks took
-	l4_debugger_backtracing_write_stats(dbg_cap);
+	// some other componen already does this, no clue where
+	// l4_debugger_backtracing_write_stats(dbg_cap);
 
 	bool is_running;
 	l4_debugger_backtracing_is_running(dbg_cap, &is_running);
@@ -199,6 +202,7 @@ inline int measure_loop(
 			"measurement round %16lld: trace interval %16.3f s, program: %s\n",
 			measure_round, (double) us_trace_interval / 1000000.0, program_name
 		);
+		// if us_trace_interval == 0, it is not started
 		us_starts[trace_interval_index][measure_round] = measure_start(us_sleep_before_tracing, us_trace_interval);
 	for (l4_uint64_t       workload_round = 0;       workload_round <       workload_rounds;       workload_round++) {
 		result += workload(workload_arg, workload_round);
