@@ -53,7 +53,7 @@ argparser.add_argument(
     metavar = "Interval",
     type = float,
     default = [.001, .010, 0],
-    help = "tracing intervals in seconds.",
+    help = "tracing intervals in seconds. write 99 or similar to distiguish nojdb runs, see there.",
 )
 argparser.add_argument(
     "--apps",
@@ -94,7 +94,33 @@ argparser.add_argument(
 argparser.add_argument(
     "--label",
     default = "measure_loop",
-    help = "which subdir of data/ to use. default: 'measure_loop'",
+    help = "which subdir of data/ to use",
+)
+argparser.add_argument(
+    "--kconf-nojdb",
+    action = "store_const",
+    const = True,
+    default = True,
+    help = "load special data for runs without jdb.",
+)
+argparser.add_argument(
+    "--no-kconf-nojdb",
+    action = "store_const",
+    const = False,
+    dest = "kconf_nojdb",
+    help = "don't load special data for runs without jdb.",
+)
+argparser.add_argument(
+    "--kconf-nojdb-label",
+    default = "kconf_nojdb",
+    help = "which subdir of data/ to search for kconf-nojdb. "
+        "rows are filtered by --kconf-nojdb-trace-interval",
+)
+argparser.add_argument(
+    "--kconf-nojdb-trace-interval",
+    type = float,
+    default = 99.0,
+    help = "which trace interval value represents runs with jdb disabled via kconf",
 )
 
 package_root = os.path.join("..", "..")
@@ -200,7 +226,8 @@ def savefig (
 
 def plot_app_durations(
     data,
-    trace_interval_selection = {-1, 0, .001, .01}
+    args,
+    trace_interval_selection = {99, 0, .001, .01},
 ):
     data = data.query("program != 'backtracer' and program != 'bt-export'")
     data = data.query(" or ".join(
@@ -222,10 +249,12 @@ def plot_app_durations(
     )
     legend = plot.legend()
     legend.set_title("Trace Interval [ms]")
+    plot.set_ylabel("Ausführungsdauer [s]")
+    plot.set_xlabel("Programm")
     print(data)
     savefig(f"data/{args.label}/app_durations.svg")
 
-def plot_btb_words(data):
+def plot_btb_words(data, args):
     data["trace_interval"] = data["trace_interval"].astype(str) # to avoid legend bins
 
     sns.barplot(
@@ -254,9 +283,18 @@ def main():
     with open(csv_filename, "w") as csv_file:
         measurements.to_csv(csv_file)
 
+    if args.kconf_nojdb:
+        csv_filename = f"data/{args.kconf_nojdb_label}/measurements.csv"
+        nojdb_data = pd.read_csv(csv_filename)
+        nojdb_data = nojdb_data.query(f"trace_interval == {args.kconf_nojdb_trace_interval}")
+        measurements = pd.concat([
+            measurements,
+            nojdb_data,
+        ])
+
     if args.plot:
-        plot_app_durations(measurements)
-        plot_btb_words(measurements)
+        plot_app_durations(measurements, args)
+        plot_btb_words(measurements, args)
 
 
 if __name__ == "__main__":
