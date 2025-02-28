@@ -53,7 +53,7 @@ inline l4_uint64_t measure_init (void) {
 	l4_uint64_t us_init  = l4_tsc_to_us (tsc_init);
 
 	bool is_valid = l4_is_valid_cap(dbg_cap) > 0;
-	if (!quiet)
+	if (ubt_debug)
 		printf(">>> dbg_cap %ld is %svalid <<<\n", dbg_cap, is_valid ? "" : "not ");
 
 	return us_init;
@@ -66,7 +66,7 @@ inline bool backtracing_is_running (void) {
 }
 
 inline l4_uint64_t measure_start (l4_uint64_t wait_us, l4_uint64_t trace_interval_us) {
-	if (!quiet)
+	if (ubt_debug)
 		printf("wait for all to settle\n");
 	l4_usleep(wait_us);
 
@@ -93,7 +93,7 @@ inline l4_uint64_t measure_stop (void) {
 
 	bool is_running;
 	l4_debugger_backtracing_is_running(dbg_cap, &is_running);
-	if (is_running && !quiet) printf(
+	if (is_running && ubt_debug) printf(
 		"after stoppping: kernel backtracer is %srunning!\n",
 		is_running ? "still " : "not "
 	);
@@ -198,7 +198,7 @@ inline int measure_loop(
 	for (l4_uint64_t trace_interval_index = 0; trace_interval_index <  trace_interval_count; trace_interval_index++) {
 		l4_uint64_t us_trace_interval = us_trace_intervals[trace_interval_index];
 	for (l4_uint64_t        measure_round = 0;        measure_round <        measure_rounds;        measure_round++) {
-		if (!quiet) printf(
+		if (ubt_debug) printf(
 			"measurement round %16lld: trace interval %16.3f s, program: %s\n",
 			measure_round, (double) us_trace_interval / 1000000.0, program_name
 		);

@@ -71,11 +71,25 @@ argparser.add_argument(
     help = "start the measurement in overhead mode (no export)",
 )
 argparser.add_argument(
-    "--flamegraph",
+    "--export",
     action = "store_const",
     const = True,
     default = False,
     help = "don't just measure overhead, also export data and plot",
+)
+argparser.add_argument(
+    "--app-prints-steps",
+    action = "store_const",
+    const = True,
+    default = False,
+    help = "print number of workload round, incurs printing overhead",
+)
+argparser.add_argument(
+    "--ubt-debug",
+    action = "store_const",
+    const = True,
+    default = False,
+    help = "print syscall logs and other debug in user backtracer",
 )
 argparser.add_argument(
     "--label",
@@ -88,37 +102,33 @@ measure_defaults = os.path.join(package_root, "include", "measure_defaults.h")
 
 s_from_us = .000_001
 
-def write_measure_defaults(
-    s_sleep_before_tracing = 0.120,
-    s_trace_intervals = [0.001, 0.010, 0],
-    measure_rounds = 10,
-    do_overhead = True,
-    do_export = False,
-):
-    us_sleep_before_tracing = int(1000_000 * s_sleep_before_tracing)
-    trace_interval_count = len(s_trace_intervals)
+def write_measure_defaults(args):
+    us_sleep_before_tracing = int(1000_000 * args.sleep_before_tracing)
+    trace_interval_count = len(args.trace_intervals)
     us_trace_intervals      = "{" + ", ".join(
         str(int(1000_000 * s_trace_interval))
-        for s_trace_interval in s_trace_intervals
+        for s_trace_interval in args.trace_intervals
     ) + "}"
 
     # we don't necessarily have stdbool, so use 0 and 1
-    c_do_overhead = 1 if do_overhead else 0;
-    c_do_export   = 1 if do_export   else 0;
+    c_do_overhead      = 1 if args.overhead         else 0;
+    c_do_export        = 1 if args.export           else 0;
+    c_app_prints_steps = 1 if args.app_prints_steps else 0;
+    c_ubt_debug        = 1 if args.ubt_debug        else 0;
 
     text = f"""
 // this file is written by measure.py to automate overhead measurements
 static const l4_uint64_t us_sleep_before_tracing = {us_sleep_before_tracing};
 static const l4_uint64_t trace_interval_count = {trace_interval_count};
 static const l4_uint64_t us_trace_intervals [] = {us_trace_intervals};
-static const l4_uint64_t measure_rounds = {measure_rounds};
+static const l4_uint64_t measure_rounds = {args.measure_rounds};
 static const int do_overhead = {c_do_overhead};
 // for backtracer/main.cc
 static const int do_export = {c_do_export};
 static const int app_controls_tracing = 1;
-static const int app_prints_steps = 0;
+static const int app_prints_steps = {c_app_prints_steps};
 // no syscall debugging infos, no backtracer debugging infos
-static const int quiet = 1;
+static const int ubt_debug = {c_ubt_debug};
 """
     with open(measure_defaults, "w") as file:
         file.write(text)
@@ -138,7 +148,7 @@ def measure_overhead(app, args):
             f"is not yet implemented!"
         )
 
-    if args.flamegraph:
+    if args.export:
         make_external(
             f"LABEL={label}",
             f"data/{label}/{app}.log",
@@ -234,13 +244,7 @@ def main():
         test()
         return
 
-    write_measure_defaults(
-        s_sleep_before_tracing = args.sleep_before_tracing,
-        s_trace_intervals = args.trace_intervals,
-        measure_rounds = args.measure_rounds,
-        do_overhead = args.overhead,
-        do_export = args.flamegraph,
-    )
+    write_measure_defaults(args)
     measurements = pd.concat(
         pd.read_csv(app_csv_filename := measure_overhead(app, args))
         for app in args.apps
