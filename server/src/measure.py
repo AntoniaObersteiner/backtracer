@@ -238,8 +238,16 @@ def plot_app_durations(
     data["ms_trace_interval"] = data["trace_interval"] * 1000
     # to avoid legend bins
     data["ms_trace_interval"] = data["ms_trace_interval"].astype(int).astype(str)
-    data["ms_trace_interval"].replace(to_replace = "-1", value = "nicht aktiv")
-    data["ms_trace_interval"].replace(to_replace = "0", value = "nicht kompiliert")
+    data["ms_trace_interval"].replace(
+        to_replace = str(int(args.kconf_nojdb_trace_interval * 1000)),
+        value = "nicht kompiliert",
+        inplace = True,
+    )
+    data["ms_trace_interval"].replace(
+        to_replace = "0",
+        value = "nicht aktiviert",
+        inplace = True,
+    )
 
     plot = sns.barplot(
         data = data,
