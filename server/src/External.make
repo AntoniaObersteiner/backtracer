@@ -253,8 +253,9 @@ pxe_menu:
 
 .PHONY: fiasco_swap_kconfig
 fiasco_swap_kconfig:
-	sudo cp $(FIASCO_BUILD_PATH)/$(KCONFIG).out $(FIASCO_BUILD_PATH)/$(KCONFIG_BASE).out
-	sudo cp $(FIASCO_BUILD_PATH)/$(KCONFIG).h   $(FIASCO_BUILD_PATH)/$(KCONFIG_BASE).h
+	# use rsync so no unnecessary copying triggers full recopmilation
+	sudo rsync -avuP $(FIASCO_BUILD_PATH)/$(KCONFIG).out $(FIASCO_BUILD_PATH)/$(KCONFIG_BASE).out
+	sudo rsync -avuP $(FIASCO_BUILD_PATH)/$(KCONFIG).h   $(FIASCO_BUILD_PATH)/$(KCONFIG_BASE).h
 
 .PHONY: fiasco_config
 fiasco_config:
