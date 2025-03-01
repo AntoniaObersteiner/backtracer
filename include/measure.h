@@ -216,11 +216,7 @@ inline int measure_loop(
 			// clear buffer after measuring its content
 			// TODO: user is responsible for managing overflow as of now
 			l4_debugger_backtracing_reset(dbg_cap);
-	}
-	}
 
-	for (l4_uint64_t trace_interval_index = 0; trace_interval_index <  trace_interval_count; trace_interval_index++) {
-	for (l4_uint64_t        measure_round = 0;        measure_round <        measure_rounds;        measure_round++) {
 		print_measure_line (
 			program_name,
 			us_trace_intervals[trace_interval_index],
@@ -231,11 +227,6 @@ inline int measure_loop(
 			btb_words[trace_interval_index][measure_round],
 			long_int_us
 		);
-	}
-	}
-
-	for (l4_uint64_t trace_interval_index = 0; trace_interval_index <  trace_interval_count; trace_interval_index++) {
-	for (l4_uint64_t        measure_round = 0;        measure_round <        measure_rounds;        measure_round++) {
 		print_measure_line (
 			program_name,
 			us_trace_intervals[trace_interval_index],
