@@ -88,8 +88,7 @@ inline l4_uint64_t measure_stop (void) {
 	l4_uint64_t us_stop  = l4_tsc_to_us (tsc_stop);
 
 	// write the histogram of how long differently deep stacks took
-	// some other componen already does this, no clue where
-	// l4_debugger_backtracing_write_stats(dbg_cap);
+	l4_debugger_backtracing_write_stats(dbg_cap);
 
 	bool is_running;
 	l4_debugger_backtracing_is_running(dbg_cap, &is_running);
@@ -239,6 +238,8 @@ inline int measure_loop(
 		);
 	}
 	}
+
+	printf("-- measure_loop complete --\n");
 
 	return result;
 }
