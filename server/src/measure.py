@@ -6,6 +6,7 @@ import re
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
+from copy import deepcopy
 
 class MyFormatter(
     argparse.ArgumentDefaultsHelpFormatter,
@@ -187,7 +188,7 @@ argparser.add_argument(
     help = "create / load special data for runs without jdb. see EXTRA KCONFIG below.",
 )
 argparser.add_argument(
-    "--no-extra-kconfig",
+    "--no-extra-kconfigs",
     action = "store_const",
     const = [],
     dest = "extra_kconfig",
@@ -309,11 +310,12 @@ def plot_app_durations(
     data["ms_trace_interval"] = data["trace_interval"] * 1000
     # to avoid legend bins
     data["ms_trace_interval"] = data["ms_trace_interval"].astype(int).astype(str)
-    data["ms_trace_interval"].replace(
-        to_replace = str(int(args.kconf_nojdb_trace_interval * 1000)),
-        value = "nicht kompiliert",
-        inplace = True,
-    )
+    for kconfig in args.extra_kconfigs:
+        data["ms_trace_interval"].replace(
+            to_replace = str(int(kconfig.trace_intervals[0] * 1000)),
+            value = kconfig.plot_label,
+            inplace = True,
+        )
     data["ms_trace_interval"].replace(
         to_replace = "0",
         value = "nicht aktiviert",
