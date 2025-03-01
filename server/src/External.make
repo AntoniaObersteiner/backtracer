@@ -21,7 +21,7 @@ ELFIO_PATH:=$(BASE_PATH)/ELFIO
 FLAME_GRAPH_OPTIONS:=\
 	--subtitle "L4/Fiasco Backtracer" \
 	--width 800 \
-	--minwidth 32 \
+	--minwidth 8 \
 
 	#--fonttype "TeX Gyre Schola" \
 
@@ -183,8 +183,12 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 	$(FLAME_GRAPH)/flamegraph.pl \
 		--subtitle "L4/Fiasco Backtracer" \
 		--title "Flame Graph $(*F)" \
-		--minwidth 8 \
+		--minwidth 1 \
 		$< > $@
+
+%.cleaned.svg: %.cleaned
+	# read in the qsort debug print output and plot the left/right distribution
+	python3 ../../../qsort/server/src/plot_steps.py $<
 
 %.pdf: %.svg
 	rsvg-convert -f pdf -o $@ $<
