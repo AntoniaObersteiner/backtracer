@@ -10,8 +10,11 @@ I=../../include
 O=./objects
 # data (intermediate objects and samples
 D=./data
+ARCH=amd64
 BASE_PATH=../../../../..
 BUILD_PATH=$(BASE_PATH)/__build__
+FIASCO_BUILD_PATH=$(BUILD_PATH)/$(ARCH)/fiasco
+L4RE_BUILD_PATH=$(BUILD_PATH)/$(ARCH)/l4
 
 FLAME_GRAPH:=$(BASE_PATH)/FlameGraph
 ELFIO_PATH:=$(BASE_PATH)/ELFIO
@@ -68,8 +71,13 @@ COMPRESSED:=$D/$(MODULE).compressed
 BUFFER:=$D/$(MODULE).btb
 INTERPRETED:=$D/$(MODULE).interpreted
 
-BINARY_DIR=$(BASE_PATH)/__build__/amd64/l4/bin/amd64_gen/l4f/.debug
+BINARY_DIR=$(L4RE_BUILD_PATH)/bin/amd64_gen/l4f/.debug
 BINARY_LIST=$D/binaries.list
+
+# these are filenames of kernel configs (without .out/.h)
+# $(FIASCO_BUILD_PATH) is always prepended
+KCONFIG_BASE=globalconfig
+KCONFIG=fullkbt
 
 ELFDUMP=ELFIO/examples/elfdump/elfdump
 # with what file output to test ./interpret,
@@ -219,9 +227,9 @@ rsync_to_oz:
 	rsync -avuP data oz:Antonia/STUDIUM/os/fl4mer/
 
 L4_BINARIES=\
-	$(shell find $(BUILD_PATH)/amd64/l4/bin/amd64_gen/l4f/ -maxdepth 1 -type f) \
-	$(BUILD_PATH)/amd64/fiasco/fiasco \
-	$(BUILD_PATH)/amd64/l4/bin/amd64_gen/plain/bootstrap \
+	$(shell find $(L4RE_BUILD_PATH)/bin/amd64_gen/l4f/ -maxdepth 1 -type f) \
+	$(FIASCO_BUILD_PATH)/fiasco \
+	$(L4RE_BUILD_PATH)/bin/amd64_gen/plain/bootstrap \
 
 L4_CONFIGS=\
 	$(shell find $(BASE_PATH)/l4/conf/examples/ -name '*-backtraced.cfg')
@@ -243,11 +251,18 @@ pxe_menu:
 		--bins $(L4_BINARIES) \
 		--conf $(L4_CONFIGS)
 
+.PHONY: fiasco_swap_kconfig
+fiasco_swap_kconfig:
+	sudo cp $(FIASCO_BUILD_PATH)/$(KCONFIG).out $(FIASCO_BUILD_PATH)/$(KCONFIG_BASE).out
+	sudo cp $(FIASCO_BUILD_PATH)/$(KCONFIG).h   $(FIASCO_BUILD_PATH)/$(KCONFIG_BASE).h
+
 .PHONY: fiasco_config
 fiasco_config:
 	cd $(BASE_PATH) && sudo                                       \
 		./start_docker.sh                                         \
 		make -C /build/amd64/fiasco menuconfig
+	sudo cp $(FIASCO_BUILD_PATH)/$(KCONFIG_BASE).out $(FIASCO_BUILD_PATH)/$(KCONFIG).out
+	sudo cp $(FIASCO_BUILD_PATH)/$(KCONFIG_BASE).h   $(FIASCO_BUILD_PATH)/$(KCONFIG).h
 
 .PHONY: l4_config
 l4_config:

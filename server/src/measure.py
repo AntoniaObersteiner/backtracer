@@ -7,12 +7,32 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
+class MyFormatter(
+    argparse.ArgumentDefaultsHelpFormatter,
+    argparse.RawDescriptionHelpFormatter,
+): pass
 
 argparser = argparse.ArgumentParser(
     prog = "measure.py",
     description = "controls overhead measurements "
         "and flamegraph generation for multiple applications.",
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    formatter_class = MyFormatter,
+    epilog = """
+EXTRA KCONFIG
+Separate Kconfig files are swapped in in the build directory of fiasco and the
+build scripts take care to recompile. This allows to gather runtimes for
+different configs in separate directories (data/{label}/). This is done since
+the files are just named {app}.csv.
+The config files must be created beforehand and be present in the fiasco build
+dir, see External.make::fiasco_config and ::fiasco_swap_kconfig.
+Format: {filename}:{trace_intervals}:{plot_label}:[label]
+- filename must not contain weird characters like ",:; \\n".
+  both {filename}.out and {filename}.h are copied onto globalconfig.{out,h}.
+- trace intervals is comma-separated.
+- plot_label should probably not contain ":", but who knows.
+- label is optional (the : before is not!) and defaults to kconfig_filename.
+  it's the --label, so a directory in data/
+"""
 )
 argparser.add_argument(
     "--measure-rounds",
@@ -96,31 +116,82 @@ argparser.add_argument(
     default = "measure_loop",
     help = "which subdir of data/ to use",
 )
+class ExtraKconfig:
+    def __init__(self, filename, trace_intervals, plot_label, label = None):
+        self.filename = filename
+        self.trace_intervals = trace_intervals
+        self.plot_label = plot_label
+        if label is None:
+            label = self.filename
+        self.label = label
+
+    def __str__(self):
+        return (
+            f"{self.filename}:"
+            f"{','.join(self.trace_intervals)}:"
+            f"{self.plot_label}"
+        )
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}("
+            f"{self.filename = }, "
+            f"{self.trace_intervals = }, "
+            f"{self.plot_label = }, "
+            f"{self.label = })"
+        )
+
+    extra_kconfig_format = re.compile(r"(.+):([0-9]+):(.+):(.*)")
+    def parse(self, text):
+        m = extra_kconfig_format.fullmatch(text)
+        return ExtraKconfig(
+            m[1],
+            list(float(v for v in m[2].split(","))),
+            m[3],
+            m[4] if m[4] else None
+        )
+
+    def swap_in(self):
+        make_external(
+            f"KCONFIG={self.filename}",
+            f"fiasco_swap_kconfig",
+        )
+
+    def modified_args(self, args):
+        new_args = deepcopy(args)
+        new_args.trace_intervals = self.trace_intervals
+        new_args.label = self.label
+        return new_args
+
+    def default_kconfig(args):
+        return ExtraKconfig(
+            filename = "fullkbt",
+            trace_intervals = args.trace_intervals,
+            plot_label = None, # actual trace interval
+            label = args.label,
+        )
+
 argparser.add_argument(
-    "--kconf-nojdb",
+    "--default-kconfig-name",
+    default = "fullkbt",
+    help = "the name of the default kconfig.",
+)
+argparser.add_argument(
+    "--extra-kconfigs",
+    nargs = "+",
+    type = ExtraKconfig.parse,
+    default = [
+        ExtraKconfig("nojdb", [99], "kein JDB"),
+        ExtraKconfig("nokbt", [98], "kein KBT"),
+    ],
+    help = "create / load special data for runs without jdb. see EXTRA KCONFIG below.",
+)
+argparser.add_argument(
+    "--no-extra-kconfig",
     action = "store_const",
-    const = True,
-    default = True,
-    help = "load special data for runs without jdb.",
-)
-argparser.add_argument(
-    "--no-kconf-nojdb",
-    action = "store_const",
-    const = False,
-    dest = "kconf_nojdb",
-    help = "don't load special data for runs without jdb.",
-)
-argparser.add_argument(
-    "--kconf-nojdb-label",
-    default = "kconf_nojdb",
-    help = "which subdir of data/ to search for kconf-nojdb. "
-        "rows are filtered by --kconf-nojdb-trace-interval",
-)
-argparser.add_argument(
-    "--kconf-nojdb-trace-interval",
-    type = float,
-    default = 99.0,
-    help = "which trace interval value represents runs with jdb disabled via kconf",
+    const = [],
+    dest = "extra_kconfig",
+    help = "don't create of load special data for runs without jdb/kbt/....",
 )
 
 package_root = os.path.join("..", "..")
@@ -274,6 +345,24 @@ def plot_btb_words(data, args):
     )
     savefig(f"data/{args.label}/btb_words.svg")
 
+def measure_and_write(args, kconfig = None):
+    if kconfig is None:
+        kconfig = ExtraKconfig.default_kconfig(args)
+    kconfig.swap_in()
+
+    write_measure_defaults(args)
+    measurements = pd.concat(
+        pd.read_csv(app_csv_filename := measure_overhead(app, args))
+        for app in args.apps
+    )
+    measurements["kconfig"] = pd.Series([kconfig.filename for _ in range(len(measurements.index))])
+
+    csv_filename = f"data/{args.label}/measurements.csv"
+    with open(csv_filename, "w") as csv_file:
+        measurements.to_csv(csv_file)
+
+    return measurements
+
 def main():
     args = argparser.parse_args()
 
@@ -281,23 +370,19 @@ def main():
         test()
         return
 
-    write_measure_defaults(args)
-    measurements = pd.concat(
-        pd.read_csv(app_csv_filename := measure_overhead(app, args))
-        for app in args.apps
-    )
+    measurements = measure_and_write(args)
 
-    csv_filename = f"data/{args.label}/measurements.csv"
-    with open(csv_filename, "w") as csv_file:
-        measurements.to_csv(csv_file)
+    for kconfig in args.extra_kconfigs:
+        modified_args = kconfig.modified_args(args)
+        kconfig_measurements = measure_and_write(modified_args, kconfig)
 
-    if args.kconf_nojdb:
-        csv_filename = f"data/{args.kconf_nojdb_label}/measurements.csv"
-        nojdb_data = pd.read_csv(csv_filename)
-        nojdb_data = nojdb_data.query(f"trace_interval == {args.kconf_nojdb_trace_interval}")
+        kconfig_measurements = kconfig_measurements.query(" or ".join(
+            f"trace_interval == {i}"
+            for i in kconfig.trace_intervals
+        ))
         measurements = pd.concat([
             measurements,
-            nojdb_data,
+            kconfig_measurements,
         ])
 
     if args.plot:
