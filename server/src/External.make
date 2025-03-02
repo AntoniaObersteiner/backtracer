@@ -332,6 +332,10 @@ $O/%.disas:
 	echo "file: $$file"                                   && \
 	objdump -lSd  "$$file" > $@
 
+.PHONY: clear
+clear:
+	rm -rf data/$(LABEL)
+
 .PHONY: clean
 clean:
 	# note: does not remove .cleaned or .traced files, because tracing takes so long
