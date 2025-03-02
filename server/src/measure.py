@@ -312,11 +312,14 @@ def plot_app_durations(
     # to avoid legend bins
     data["ms_trace_interval"] = data["ms_trace_interval"].astype(int).astype(str)
     for kconfig in args.extra_kconfigs:
-        data["ms_trace_interval"].replace(
-            to_replace = str(int(kconfig.trace_intervals[0] * 1000)),
-            value = kconfig.plot_label,
-            inplace = True,
-        )
+        if len(kconfig.trace_intervals) != 1:
+            print(f"Warning! there are {len(kconfig.trace_intervals) = } in {kconfig = }!")
+        for kconfig_interval in kconfig.trace_intervals:
+            data["ms_trace_interval"].replace(
+                to_replace = str(int(kconfig_interval * 1000)),
+                value = kconfig.plot_label,
+                inplace = True,
+            )
     data["ms_trace_interval"].replace(
         to_replace = "0",
         value = "nicht aktiviert",
