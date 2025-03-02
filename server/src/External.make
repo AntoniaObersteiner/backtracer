@@ -186,6 +186,13 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 		--minwidth 1 \
 		$< > $@
 
+%.ultrafine.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
+	$(FLAME_GRAPH)/flamegraph.pl \
+		--subtitle "L4/Fiasco Backtracer" \
+		--title "Flame Graph $(*F)" \
+		--minwidth 0 \
+		$< > $@
+
 %.cleaned.svg: %.cleaned
 	# read in the qsort debug print output and plot the left/right distribution
 	python3 ../../../qsort/server/src/plot_steps.py $<
@@ -207,6 +214,7 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 		$*.durations \
 		$*.svg \
 		$*.fine.svg \
+		$*.ultrafine.svg \
 		$*.pdf \
 		$*.histogram.svg \
 		$*.histogram.pdf \
