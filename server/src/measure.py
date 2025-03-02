@@ -311,6 +311,11 @@ def plot_app_durations(
     data["ms_trace_interval"] = data["trace_interval"] * 1000
     # to avoid legend bins
     data["ms_trace_interval"] = data["ms_trace_interval"].astype(int).astype(str)
+    # maps label -> original value
+    ms_trace_interval_map = {
+        str(int(trace_interval * 1000)): trace_interval
+        for trace_interval in set(data["trace_interval"])
+    }
     for kconfig in args.extra_kconfigs:
         if len(kconfig.trace_intervals) != 1:
             print(f"Warning! there are {len(kconfig.trace_intervals) = } in {kconfig = }!")
@@ -320,17 +325,32 @@ def plot_app_durations(
                 value = kconfig.plot_label,
                 inplace = True,
             )
+            del ms_trace_interval_map[str(int(kconfig_interval * 1000))]
+            ms_trace_interval_map[kconfig.plot_label] = kconfig_interval
     data["ms_trace_interval"].replace(
         to_replace = "0",
         value = "nicht aktiviert",
         inplace = True,
     )
+    del ms_trace_interval_map["0"]
+    ms_trace_interval_map["nicht aktiviert"] = 10 # makes more sense for sorting
+    ms_trace_interval_order = list(ms_trace_interval_map.keys())
+    ms_trace_interval_order.sort(key = lambda interval_label: ms_trace_interval_map[interval_label])
+
+    programs = list(set(data["program"]))
+    program_durations = {
+        program: data.query(f"program == '{program}'")["duration"].mean()
+        for program in programs
+    }
+    programs.sort(key = lambda program: program_durations[program])
 
     plot = sns.barplot(
         data = data,
         x = "program",
         y = "duration",
         hue = "ms_trace_interval",
+        order = programs,
+        hue_order = ms_trace_interval_order,
     )
     legend = plot.legend()
     legend.set_title("Trace Interval [ms]")
