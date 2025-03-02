@@ -300,7 +300,7 @@ def savefig (
 def plot_app_durations(
     data,
     args,
-    trace_interval_selection = {99, 0, .001, .01},
+    trace_interval_selection = {99, 98, 0, .001, .01},
 ):
     data = data.query("program != 'backtracer' and program != 'bt-export'")
     data = data.query(" or ".join(
