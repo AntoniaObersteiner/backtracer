@@ -127,14 +127,29 @@ def from_raw_durations():
     lang = make_lang(unit_text)
     do_style(legend_facecolor = "white")
 
+    def boxplot_or_scatter_plot(ax = None):
+        if max_depth < 100:
+            return sns.boxplot(
+                data = data,
+                x = "stack_depth",
+                y = f"{unit}_duration",
+                color = "orange",
+                width = .6,
+                ax = ax,
+            )
+        else:
+            return sns.scatterplot(
+                data = data,
+                x = "stack_depth",
+                y = f"{unit}_duration",
+                color = "orange",
+                ax = ax,
+                marker = "+",
+            )
+
+
     # make background, so grid is behind bars but matches duration ticks
-    ax_bg = sns.boxplot(
-        data = data,
-        x = "stack_depth",
-        y = f"{unit}_duration",
-        color = "orange",
-        width = .6,
-    )
+    ax_bg = boxplot_or_scatter_plot()
 
     depths = np.array(range(min_depth, max_depth + 1))
     counts = [
@@ -161,17 +176,12 @@ def from_raw_durations():
     )
 
     #sns.set_style("white")
-    # make another plot in front for average duration
+    # make another plot in front for actual durations
     ax_dot = ax_bg.twinx()
-    sns.boxplot(
-        data = data,
-        x = "stack_depth",
-        y = f"{unit}_duration",
-        color = "orange",
-        width = .6,
-        ax = ax_dot,
-        #label = lang["rlabel"],
-    )
+    boxplot_or_scatter_plot(ax_dot)
+
+    max_duration_estimate = linear_estimator(max_depth)
+    ax_dot.set_ylim(top = max(40, int(1.3 * max_duration_estimate)))
 
     layout_and_export(
         ax_bg,
@@ -194,7 +204,6 @@ def layout_and_export(
 ):
     ax_bar.set_ymargin(.3)
     ax_dot.set_ylim(bottom = 0)
-    ax_dot.set_ylim(top = 40)
     ax_bar.xaxis.set_major_locator(mticker.MultipleLocator(tick_step))
     ax_bg .set_ybound(ax_dot.get_ybound())
     ax_est.set_ybound(ax_dot.get_ybound())
@@ -229,6 +238,7 @@ def layout_and_export(
     ax_dot.legend(
         handles = h1 + h2 + h3,
         labels  = l1 + l2 + l3,
+        loc = "upper right",
     )
     try:
         ax_bar.get_legend().remove()
