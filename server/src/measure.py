@@ -1,12 +1,8 @@
 #!/usr/bin/python3
 
-import argparse
 import os
 import re
-import pandas as pd
-import seaborn as sns
-from matplotlib import pyplot as plt
-from copy import deepcopy
+import argparse
 
 class MyFormatter(
     argparse.ArgumentDefaultsHelpFormatter,
@@ -191,12 +187,17 @@ argparser.add_argument(
     "--no-extra-kconfigs",
     action = "store_const",
     const = [],
-    dest = "extra_kconfig",
-    help = "don't create of load special data for runs without jdb/kbt/....",
+    dest = "extra_kconfigs",
+    help = "don't create or load special data for runs without jdb/kbt/....",
 )
 
 package_root = os.path.join("..", "..")
 measure_defaults = os.path.join(package_root, "include", "measure_defaults.h")
+
+import pandas as pd
+import seaborn as sns
+from matplotlib import pyplot as plt
+from copy import deepcopy
 
 s_from_us = .000_001
 
