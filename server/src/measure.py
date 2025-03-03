@@ -113,6 +113,7 @@ argparser.add_argument(
     default = "measure_loop",
     help = "which subdir of data/ to use",
 )
+extra_kconfig_format = re.compile(r"(.+):([0-9]+):(.+):(.*)")
 class ExtraKconfig:
     def __init__(self, filename, trace_intervals, plot_label, label = None):
         self.filename = filename
@@ -138,12 +139,11 @@ class ExtraKconfig:
             f"{self.label = })"
         )
 
-    extra_kconfig_format = re.compile(r"(.+):([0-9]+):(.+):(.*)")
-    def parse(self, text):
+    def parse(text):
         m = extra_kconfig_format.fullmatch(text)
         return ExtraKconfig(
             m[1],
-            list(float(v for v in m[2].split(","))),
+            list(float(v) for v in m[2].split(",")),
             m[3],
             m[4] if m[4] else None
         )
@@ -198,6 +198,9 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from copy import deepcopy
+
+from tools.hist_plot import do_style
+do_style()
 
 s_from_us = .000_001
 
@@ -351,6 +354,7 @@ def plot_app_durations(
         hue = "ms_trace_interval",
         order = programs,
         hue_order = ms_trace_interval_order,
+        palette = "tab10",
     )
     legend = plot.legend()
     legend.set_title("Trace Interval [ms]")
