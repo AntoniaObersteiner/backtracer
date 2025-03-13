@@ -229,7 +229,7 @@ static const int do_overhead = {c_do_overhead};
 static const int do_export = {c_do_export};
 static const int app_controls_tracing = 1;
 static const int app_prints_steps = {c_app_prints_steps};
-// no syscall debugging infos, no backtracer debugging infos
+// syscall debugging infos, backtracer debugging infos
 static const int ubt_debug = {c_ubt_debug};
 """
     with open(measure_defaults, "w") as file:
