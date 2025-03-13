@@ -95,8 +95,6 @@ test_compress: $O/test_compress.o $O/compress.o $S/compress.hpp
 	$(CXX) -o $@ $(filter %.o,$+)
 decompress: $O/decompress.o $O/compress.o $O/mmap_file.o $S/compress.hpp
 	$(CXX) -o $@ $(filter %.o,$+)
-terminator: $O/terminator.o
-	$(CXX) -o $@ $(filter %.o,$+)
 
 .NOTINTERMEDIATE:
 
