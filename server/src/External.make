@@ -19,7 +19,7 @@ L4RE_BUILD_PATH=$(BUILD_PATH)/$(ARCH)/l4
 FLAME_GRAPH:=$(BASE_PATH)/FlameGraph
 ELFIO_PATH:=$(BASE_PATH)/ELFIO
 FLAME_GRAPH_OPTIONS:=\
-	--subtitle "L4/Fiasco Backtracer" \
+	--subtitle "L4Re/Fiasco Backtracer" \
 	--width 800 \
 	--minwidth 8 \
 
@@ -181,14 +181,22 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 
 %.fine.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
 	$(FLAME_GRAPH)/flamegraph.pl \
-		--subtitle "L4/Fiasco Backtracer" \
+		--subtitle "L4Re/Fiasco Backtracer" \
 		--title "Flame Graph $(*F)" \
 		--minwidth 1 \
 		$< > $@
 
+%.narrow.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
+	$(FLAME_GRAPH)/flamegraph.pl \
+		--subtitle "L4Re/Fiasco Backtracer" \
+		--title "Flame Graph $(*F)" \
+		--minwidth 1 \
+		--width 400 \
+		$< > $@
+
 %.ultrafine.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
 	$(FLAME_GRAPH)/flamegraph.pl \
-		--subtitle "L4/Fiasco Backtracer" \
+		--subtitle "L4Re/Fiasco Backtracer" \
 		--title "Flame Graph $(*F)" \
 		--minwidth 0 \
 		$< > $@

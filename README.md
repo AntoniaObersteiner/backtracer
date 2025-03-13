@@ -42,3 +42,18 @@ Possible endings that can be substituted for `svg` above:
 
 `make -f External.make data/$(MODULE).svg` will start ned with the config `$(MODULE)-backtraced.cfg`.
 
+## Future Delvopment
+
+- add any other timer
+- intermediate-save symbol tables (or binaries)
+- more documentation
+- refactor fiasco (jdb_bt and jdb_btb)
+- clean up inner bt debugging
+- clean up inner bt preprocessor directives
+- clean up Kconfig
+- make various timers configurable
+- clean up backtracer directories
+- clean up backtracer Makefile (switch to different system?)
+- clean up backtracer block system
+- network export?
+
