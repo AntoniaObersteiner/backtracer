@@ -191,7 +191,7 @@ argparser.add_argument(
     help = "don't create or load special data for runs without jdb/kbt/....",
 )
 
-package_root = os.path.join("..", "..")
+package_root = os.path.join("..")
 measure_defaults = os.path.join(package_root, "include", "measure_defaults.h")
 
 import pandas as pd

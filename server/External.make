@@ -5,13 +5,13 @@ CXX=g++-13
 # source directory
 S=./src
 # include directory
-I=../../include
+I=../include
 # build directory (not named ./build, consider fiasco and l4's ./__build__ and /build complexities)
 O=./objects
 # data (intermediate objects and samples
 D=./data
 ARCH=amd64
-BASE_PATH=../../../../..
+BASE_PATH=../../../..
 BUILD_PATH=$(BASE_PATH)/__build__
 FIASCO_BUILD_PATH=$(BUILD_PATH)/$(ARCH)/fiasco
 L4RE_BUILD_PATH=$(BUILD_PATH)/$(ARCH)/l4
