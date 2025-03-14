@@ -165,6 +165,17 @@ def from_raw_durations():
         label = lang["llabel"],
     )
 
+    layout_and_export(
+        ax_bg,
+        ax_bar,
+        ax_est = DummyAxes(),
+        ax_dot = DummyAxes(),
+        lang = lang,
+        tick_step = tick_step,
+        linear_estimator_description = linear_estimator_description,
+        filename_extra = ".bars",
+    )
+
     # make another plot in front for linear regression
     ax_est = ax_bg.twinx()
     sns.lineplot(
@@ -193,6 +204,33 @@ def from_raw_durations():
         linear_estimator_description,
     )
 
+class DummyAxis:
+    def __init__(self): pass
+    def set_major_locator(self, arg): pass
+    def set_label_position(self, arg): pass
+
+class DummyLegend:
+    def __init__(self): pass
+    def remove(self): pass
+    def set_label_position(self, arg): pass
+
+class DummyAxes:
+    def __init__(self):
+        self.xaxis = DummyAxis()
+        self.yaxis = DummyAxis()
+    def grid(self, arg): pass
+    def set_title(self, arg): pass
+    def set_ybound(self, arg): pass
+    def get_ybound(self): pass
+    def set_ylim(self, **kwargs): pass
+    def set_xlabel(self, arg): pass
+    def set_ylabel(self, arg): pass
+    def set_ylabel(self, arg): pass
+    def tick_params(self, **kwargs): pass
+    def get_legend_handles_labels(self): return [], []
+    def legend(self, **kwargs): pass
+    def get_legend(self): return DummyLegend()
+
 def layout_and_export(
     ax_bg,
     ax_bar,
@@ -201,6 +239,7 @@ def layout_and_export(
     lang,
     tick_step,
     linear_estimator_description,
+    filename_extra = "",
 ):
     ax_bar.set_ymargin(.3)
     ax_dot.set_ylim(bottom = 0)
@@ -247,7 +286,7 @@ def layout_and_export(
         pass
 
     for ending in ["svg", "pdf"]:
-        output_filename = args.filename + "." + ending
+        output_filename = args.filename + filename_extra + "." + ending
         print(f"writing plot to {output_filename!r}")
         plt.savefig(output_filename)
 
@@ -302,6 +341,17 @@ def from_histogram():
         label = lang["llabel"],
     )
 
+    layout_and_export(
+        ax_bg,
+        ax_bar,
+        ax_est = DummyAxes(),
+        ax_dot = DummyAxes(),
+        lang = lang,
+        tick_step = tick_step,
+        linear_estimator_description = linear_estimator_description,
+        filename_extra = ".bars",
+    )
+
     # make another plot in front for linear regression
     ax_est = ax_bg.twinx()
     sns.lineplot(
@@ -310,6 +360,17 @@ def from_histogram():
         ax = ax_est,
         color = "black",
         label = lang["elabel"],
+    )
+
+    layout_and_export(
+        ax_bg,
+        ax_bar,
+        ax_est,
+        ax_dot = DummyAxes(),
+        lang = lang,
+        tick_step = tick_step,
+        linear_estimator_description = linear_estimator_description,
+        filename_extra = ".est",
     )
 
     #sns.set_style("white")
