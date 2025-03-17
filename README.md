@@ -46,7 +46,9 @@ Possible endings that can be substituted for `svg` above:
 
 - add any other timer
 - intermediate-save symbol tables (or binaries)
+    - only relevant table parts in file
 - more documentation
+- very deep stack fix
 - refactor fiasco (jdb_bt and jdb_btb)
 - clean up inner bt debugging
 - clean up inner bt preprocessor directives
@@ -56,4 +58,8 @@ Possible endings that can be substituted for `svg` above:
 - clean up backtracer Makefile (switch to different system?)
 - clean up backtracer block system
 - network export?
+    - Till M nach UDP-Code fragen
+    - luna, incl. Beispielprogramm
+    - qemu nic-dev-type=e1000 oder so
+    - tune-?tab-device verbindet sich in qemu, auf host dann mit bridge
 
