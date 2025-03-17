@@ -75,7 +75,7 @@ def make_lang(unit_text):
         "xlabel": f"Stack-Tiefe in Frames",
         "rlabel": f"Dauer in {unit_text}",
         "elabel": f"Lineare Näherung der Dauer",
-        "llabel": f"Anzahl mit dieser Stacktiefe",
+        "llabel": f"Anzahl mit dieser Stacktiefe  ",
         "depth": "Stack-Tiefe",
     }
     en = {
@@ -127,29 +127,29 @@ def from_raw_durations():
     lang = make_lang(unit_text)
     do_style(legend_facecolor = "white")
 
-    def boxplot_or_scatter_plot(ax = None):
+    def boxplot_or_scatter_plot(ax = None, visible = True):
         if max_depth < 100:
             return sns.boxplot(
                 data = data,
-                x = "stack_depth",
+                x = data["stack_depth"] - data["stack_depth"].min(),
                 y = f"{unit}_duration",
-                color = "orange",
+                color = "orange" if visible else (0, 0, 0, 0),
                 width = .6,
                 ax = ax,
             )
         else:
             return sns.scatterplot(
                 data = data,
-                x = "stack_depth",
+                x = data["stack_depth"] - data["stack_depth"].min(),
                 y = f"{unit}_duration",
-                color = "orange",
+                color = "orange" if visible else (0, 0, 0, 0),
                 ax = ax,
                 marker = "+",
             )
 
 
     # make background, so grid is behind bars but matches duration ticks
-    ax_bg = boxplot_or_scatter_plot()
+    ax_bg = boxplot_or_scatter_plot(visible = False)
 
     depths = np.array(range(min_depth, max_depth + 1))
     counts = [
@@ -164,6 +164,9 @@ def from_raw_durations():
         ax = ax_bar,
         label = lang["llabel"],
     )
+    xlim = ax_bar.get_xlim()
+    xlim_diff = (xlim[1] - xlim[0])**.5 / 10
+    xlim = (xlim[0] - xlim_diff, xlim[1] + xlim_diff)
 
     layout_and_export(
         ax_bg,
@@ -174,6 +177,23 @@ def from_raw_durations():
         tick_step = tick_step,
         linear_estimator_description = linear_estimator_description,
         filename_extra = ".bars",
+        xlim = xlim,
+    )
+
+    # plot actual durations
+    ax_dot = ax_bg.twinx()
+    boxplot_or_scatter_plot(ax = ax_dot)
+
+    layout_and_export(
+        ax_bg,
+        ax_bar,
+        ax_est = DummyAxes(),
+        ax_dot = ax_dot,
+        lang = lang,
+        tick_step = tick_step,
+        linear_estimator_description = linear_estimator_description,
+        filename_extra = ".dot",
+        xlim = xlim,
     )
 
     # make another plot in front for linear regression
@@ -189,7 +209,7 @@ def from_raw_durations():
     #sns.set_style("white")
     # make another plot in front for actual durations
     ax_dot = ax_bg.twinx()
-    boxplot_or_scatter_plot(ax_dot)
+    boxplot_or_scatter_plot(ax = ax_dot)
 
     max_duration_estimate = linear_estimator(max_depth)
     ax_dot.set_ylim(top = max(40, int(1.3 * max_duration_estimate)))
@@ -202,6 +222,7 @@ def from_raw_durations():
         lang,
         tick_step,
         linear_estimator_description,
+        xlim = xlim,
     )
 
 class DummyAxis:
@@ -222,6 +243,7 @@ class DummyAxes:
     def set_title(self, arg): pass
     def set_ybound(self, arg): pass
     def get_ybound(self): pass
+    def set_xlim(self, arg): pass
     def set_ylim(self, **kwargs): pass
     def set_xlabel(self, arg): pass
     def set_ylabel(self, arg): pass
@@ -239,56 +261,72 @@ def layout_and_export(
     lang,
     tick_step,
     linear_estimator_description,
+    *,
     filename_extra = "",
+    xlim = None,
 ):
+    if xlim is None:
+        xlim = ax_bar.get_xlim()
     ax_bar.set_ymargin(.3)
     ax_dot.set_ylim(bottom = 0)
     ax_bar.xaxis.set_major_locator(mticker.MultipleLocator(tick_step))
-    ax_bg .set_ybound(ax_dot.get_ybound())
-    ax_est.set_ybound(ax_dot.get_ybound())
+    ax_dot.set_ybound(ax_bg.get_ybound())
+    ax_est.set_ybound(ax_bg.get_ybound())
+    ax_bg .set_xlim(xlim)
+    ax_dot.set_xlim(xlim)
+    ax_est.set_xlim(xlim)
     ax_bg .grid(True)
     ax_est.grid(False)
     ax_dot.grid(False)
     ax_bar.grid(False)
 
+    label_dot = not isinstance(ax_dot, DummyAxes)
+    label_est = not label_dot and not isinstance(ax_est, DummyAxes)
+    label_bg  = not label_dot and not label_est
     ax_bg .set_title(lang["title"])
     ax_bg .set_xlabel(lang["xlabel"] + "\n" + lang["elabel"] + ": " + linear_estimator_description)
     ax_bar.set_ylabel(lang["llabel"])
-    ax_dot.set_ylabel(lang["rlabel"])
-    ax_bg .set_ylabel("")
-    ax_est.set_ylabel("")
+    ax_bg .set_ylabel(lang["rlabel"] if label_bg  else "")
+    ax_dot.set_ylabel(lang["rlabel"] if label_dot else "")
+    ax_est.set_ylabel(lang["rlabel"] if label_est else "")
     plt.subplots_adjust(bottom = .15)
-    ax_bg .tick_params(axis = "y", left = False, right = False, labelleft = False, labelright = False)
-    ax_bar.tick_params(axis = "y", left = True,  right = False, labelleft = True,  labelright = False)
-    ax_est.tick_params(axis = "y", left = False, right = False, labelleft = False, labelright = False)
-    ax_dot.tick_params(axis = "y", left = False, right = True,  labelleft = False, labelright = True)
+    ax_bar.tick_params(axis = "y", left = True,  right = False,     labelleft = True,  labelright = False)
+    ax_bg .tick_params(axis = "y", left = False, right = label_bg,  labelleft = False, labelright = label_bg)
+    ax_est.tick_params(axis = "y", left = False, right = label_est, labelleft = False, labelright = label_est)
+    ax_dot.tick_params(axis = "y", left = False, right = label_dot, labelleft = False, labelright = label_dot)
     ax_bar.yaxis.set_label_position("left")
+    ax_bg .yaxis.set_label_position("right")
     ax_dot.yaxis.set_label_position("right")
+    ax_est.yaxis.set_label_position("right")
 
     h1,l1 = ax_bar.get_legend_handles_labels()
     h2,l2 = ax_dot.get_legend_handles_labels()
-    if not h2:
+    if not h2 and not isinstance(ax_dot, DummyAxes):
         h2 = [mpatches.Patch(color = "orange")]
         l2 = [lang["rlabel"]]
+    if ax_bar.get_legend() is not None:
+        ax_bar.get_legend().remove()
+    if ax_est.get_legend() is not None:
+        ax_est.get_legend().remove()
+
     h3,l3 = ax_est.get_legend_handles_labels()
     print(f"{h1 = }, {l1 = }")
     print(f"{h2 = }, {l2 = }")
     print(f"{h3 = }, {l3 = }")
-    ax_dot.legend(
+    ax_for_legend = ax_dot if not isinstance(ax_dot, DummyAxes) else ax_bar
+    ax_for_legend.legend(
         handles = h1 + h2 + h3,
         labels  = l1 + l2 + l3,
         loc = "upper right",
     )
-    try:
-        ax_bar.get_legend().remove()
-        ax_est.get_legend().remove()
-    except:
-        pass
 
     for ending in ["svg", "pdf"]:
         output_filename = args.filename + filename_extra + "." + ending
         print(f"writing plot to {output_filename!r}")
         plt.savefig(output_filename)
+
+    if ax_for_legend.get_legend() is not None:
+        ax_for_legend.get_legend().remove()
 
 def from_histogram():
     print(f"reading file {args.filename!r}")
@@ -304,6 +342,7 @@ def from_histogram():
     # use only the first exported histogram
     data = data.query("hist_counter == 0")
     # remove empty bins from the end
+    min_depth_min = data.query("count > 0")["depth_min"].min()
     max_depth_min = data.query("count > 0")["depth_min"].max()
     data = data.query(f"depth_min <= {max_depth_min}")
     print(data)
@@ -326,12 +365,12 @@ def from_histogram():
     # make background, so grid is behind bars but matches duration ticks
     ax_bg = sns.scatterplot(
         data = data.query("count != 0"),
-        x = "depth_min",
+        x = data["depth_min"] - min_depth_min,
         y = f"average_time_in_{unit}",
-        color = "black",
+        color = (0, 0, 0, 0),
     )
 
-    # plot backtround histogram of how many stacks per bin
+    # plot background histogram of how many stacks per bin
     ax_bar = ax_bg.twinx()
     sns.barplot(
         data = data,
@@ -340,6 +379,9 @@ def from_histogram():
         ax = ax_bar,
         label = lang["llabel"],
     )
+    xlim = ax_bar.get_xlim()
+    xlim_diff = (xlim[1] - xlim[0])**.5 / 10
+    xlim = (xlim[0] - xlim_diff, xlim[1] + xlim_diff)
 
     layout_and_export(
         ax_bg,
@@ -350,7 +392,33 @@ def from_histogram():
         tick_step = tick_step,
         linear_estimator_description = linear_estimator_description,
         filename_extra = ".bars",
+        xlim = xlim,
     )
+
+    # plot average duration
+    ax_dot = ax_bg.twinx()
+    sns.scatterplot(
+        data = data.query("count != 0"),
+        x = data["depth_min"] - min_depth_min,
+        y = f"average_time_in_{unit}",
+        ax = ax_dot,
+        color = "black",
+        label = lang["rlabel"],
+    )
+
+    layout_and_export(
+        ax_bg,
+        ax_bar,
+        ax_est = DummyAxes(),
+        ax_dot = ax_dot,
+        lang = lang,
+        tick_step = tick_step,
+        linear_estimator_description = linear_estimator_description,
+        filename_extra = ".dot",
+        xlim = xlim,
+    )
+
+    ax_dot.remove()
 
     # make another plot in front for linear regression
     ax_est = ax_bg.twinx()
@@ -362,23 +430,11 @@ def from_histogram():
         label = lang["elabel"],
     )
 
-    layout_and_export(
-        ax_bg,
-        ax_bar,
-        ax_est,
-        ax_dot = DummyAxes(),
-        lang = lang,
-        tick_step = tick_step,
-        linear_estimator_description = linear_estimator_description,
-        filename_extra = ".est",
-    )
-
-    #sns.set_style("white")
     # make another plot in front for average duration
     ax_dot = ax_bg.twinx()
     sns.scatterplot(
         data = data.query("count != 0"),
-        x = "depth_min",
+        x = data["depth_min"] - min_depth_min,
         y = f"average_time_in_{unit}",
         ax = ax_dot,
         color = "black",
@@ -393,6 +449,7 @@ def from_histogram():
         lang,
         tick_step,
         linear_estimator_description,
+        xlim = xlim,
     )
 
 def main():
