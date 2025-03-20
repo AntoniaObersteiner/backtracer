@@ -1,0 +1,17 @@
+
+# TODOs and FIXMEs
+
+## measure.py
+
+- data/qse/\*.svg
+    - boxplot is squashed to the left (or is it x squashed as y?)
+    - is that actually boxplot?
+
+## general structure
+
+- ELFIO in backtracer/lib
+- BUILD_PATHS and similar with ? and documentation
+- documentation on setup and patches/branches
+    - evtl. fl4mer-base tag an ersten fl4mer-commit in den branches
+
+
