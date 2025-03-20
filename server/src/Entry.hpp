@@ -43,14 +43,31 @@ public:
 		return attribute("tsc_time") + attribute("tsc_duration");
 	}
 
+	const bool has_attribute(const std::string & attribute_key) const {
+		if (super().contains(attribute_key))
+			return true;
+
+		// return this one early, because the rest of the code uses it
+		if (attribute_key == "entry_type")
+			return false;
+
+		// because of the special status of BTE_INFO, cpu_id could not easily be added to it.
+		// but we can just assume it's cpu 0, shouldn't really matter
+		if (attribute("entry_type") == BTE_INFO && attribute_key == "cpu_id")
+			return true;
+
+		return false;
+	}
+
 	const uint64_t attribute(const std::string & attribute_key) const {
 		if (super().contains(attribute_key))
 			return super().at(attribute_key);
 
+		// catch these separately, because the rest of the code uses them
 		if (attribute_key == "entry_type" || attribute_key == "tsc_time")
 			throw std::out_of_range(std::format(
 				"access to field '{}' is invalid.",
-				attribute_key, super().at("entry_type"), super().at("tsc_time")
+				attribute_key,
 			));
 
 		// because of the special status of BTE_INFO, cpu_id could not easily be added to it.
