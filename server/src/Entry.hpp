@@ -67,7 +67,7 @@ public:
 		if (attribute_key == "entry_type" || attribute_key == "tsc_time")
 			throw std::out_of_range(std::format(
 				"access to field '{}' is invalid.",
-				attribute_key,
+				attribute_key
 			));
 
 		// because of the special status of BTE_INFO, cpu_id could not easily be added to it.
