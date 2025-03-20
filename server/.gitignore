@@ -6,6 +6,11 @@ data/*.interpreted
 data/*.folded
 data/*.svg
 data/*.log
+data/*.pdf
+data/*.csv
+data/*.histogram
+data/*.durations
+data/*/
 objects/*.disas
 stderr
 stdout
