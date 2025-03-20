@@ -65,6 +65,19 @@ inline bool backtracing_is_running (void) {
 	return is_running;
 }
 
+inline l4_uint64_t backtracing_get_btb_words (void) {
+	l4_uint64_t btb_words = 0;
+	l4_debugger_backtracing_get_btb_words(dbg_cap, &btb_words);
+	return btb_words;
+}
+
+static l4_uint64_t get_btb_words_no_entry (void) {
+	// we don't have to ask for the current word count, that's always returned.
+	// but we have to ask it not to write an entry for this very control interaction.
+	l4_debugger_backtracing_control(dbg_cap, BTB_CONTROL_NO_ENTRY);
+	return l4_utcb_mr()->mr[0];
+}
+
 inline l4_uint64_t measure_start (l4_uint64_t wait_us, l4_uint64_t trace_interval_us) {
 	if (ubt_debug)
 		printf("wait for all to settle\n");

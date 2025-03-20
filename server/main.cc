@@ -22,10 +22,11 @@
 static l4_uint64_t others_control_tracing () {
 	l4_uint64_t us_start = l4_tsc_to_us(l4_rdtsc());
 
+	l4_uint64_t btb_words_start = get_btb_words_no_entry();
 	l4_uint64_t us_sleeptime = 1 * 1000 * 1000; // 1 second
-	while (!backtracing_is_running()) {
+	while (get_btb_words_no_entry() - btb_words_start == 0) {
 		if (ubt_debug)
-			printf("backtracing is not yet running, wait...\n");
+			printf("backtracing has not written anything yet, wait...\n");
 		l4_usleep(us_sleeptime);
 	}
 

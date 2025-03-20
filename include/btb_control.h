@@ -21,7 +21,7 @@
 #include <sys/mman.h>
 #include "block.h"
 
-#define backtrace_buffer_control_count 7
+#define backtrace_buffer_control_count 8
 enum backtrace_buffer_control {
 	BTB_CONTROL_START        = (1 << 0),
 	BTB_CONTROL_STOP         = (1 << 1),
@@ -30,6 +30,7 @@ enum backtrace_buffer_control {
 	BTB_CONTROL_GET_TIMESTEP = (1 << 4),
 	BTB_CONTROL_IS_RUNNING   = (1 << 5),
 	BTB_CONTROL_WRITE_STATS  = (1 << 6),
+	BTB_CONTROL_NO_ENTRY     = (1 << 7),
 };
 
 int control_to_int (const enum backtrace_buffer_control control);
@@ -46,6 +47,7 @@ const char * backtrace_buffer_control_names [backtrace_buffer_control_count] = {
 	"GET_TIMESTEP",
 	"IS_RUNNING",
 	"WRITE_STATS",
+	"NO_ENTRY",
 };
 
 int control_to_int (const enum backtrace_buffer_control control) {
