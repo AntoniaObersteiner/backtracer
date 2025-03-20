@@ -31,9 +31,15 @@ Entry::Entry (
 		self()[entry_name] = entry_descriptor.read_in(offset, buffer, length_in_words);
 	}
 	size_t payload_offset = offset;
-	payload.resize(length_in_words - entry_descriptor.size());
+	size_t payload_length = length_in_words - entry_descriptor.size();
+	payload.resize(payload_length);
 	for (; offset < length_in_words; offset++) {
-		payload[offset - payload_offset] = buffer[offset];
+		size_t index = offset - payload_offset;
+		// newer versions can use the payload as a ring buffer with a start_index
+		if (entry_type == BTE_STACK && has_attribute("start_index"))
+			index = (index + attribute("start_index")) % payload_length;
+
+		payload[offset - payload_offset] = buffer[payload_offset + index];
 	}
 	if (entry_type == BTE_MAPPING) {
 		add_mapping();
