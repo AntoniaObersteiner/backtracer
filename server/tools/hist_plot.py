@@ -6,6 +6,11 @@ argparser = argparse.ArgumentParser()
 argparser.add_argument(
     "filename",
 )
+argparser.add_argument(
+    "--do-min",
+    default = True,
+    help = "do estimation on minima per group",
+)
 
 if __name__ == "__main__":
     args = argparser.parse_args()
@@ -44,8 +49,23 @@ def make_estimator(data, unit):
     return linear_estimator, description
 
 def make_estimator_from_raw(data, unit):
+    if args.do_min:
+        grouped = data.groupby("stack_depth")
+        selected = grouped[f"{unit}_duration"]
+        minima = selected.min()
+        # print(f"{grouped = }")
+        # print(f"{selected = }")
+        print(f"{minima = }")
+        print(f"{len(minima) = }")
+        print(f"{len(minima.index) = }")
+        data = pd.DataFrame(data = {
+            f"{unit}_duration": list(minima),
+            "stack_depth": list(minima.index),
+        })
     depths    = data["stack_depth"]
     durations = data[f"{unit}_duration"]
+    print(f"{depths = }")
+    print(f"{durations = }")
 
     total_count = depths.shape[0]
 
