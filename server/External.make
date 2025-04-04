@@ -6,18 +6,21 @@ CXX=g++-13
 S=./src
 # include directory
 I=../include
-# build directory (not named ./build, consider fiasco and l4's ./__build__ and /build complexities)
+# build directory (not named ./build, consider fiasco and l4's ./build complexities)
 O=./objects
 # data (intermediate objects and samples
 D=./data
 ARCH=amd64
+PKGDIR=..
+L4DIR=$(PKGDIR)/../..
 BASE_PATH=../../../..
-BUILD_PATH=$(BASE_PATH)/__build__
+BUILD_PATH=$(BASE_PATH)/build
 FIASCO_BUILD_PATH=$(BUILD_PATH)/$(ARCH)/fiasco
 L4RE_BUILD_PATH=$(BUILD_PATH)/$(ARCH)/l4
 
-FLAME_GRAPH:=$(BASE_PATH)/FlameGraph
-ELFIO_PATH:=$(BASE_PATH)/ELFIO
+FLAME_GRAPH:=$(PKGDIR)/FlameGraph
+ELFIO_PATH:=$(PKGDIR)/ELFIO
+ELFDUMP=examples/elfdump/elfdump
 FLAME_GRAPH_OPTIONS:=\
 	--subtitle "L4Re/Fiasco Backtracer" \
 	--width 800 \
@@ -79,7 +82,6 @@ BINARY_LIST=$D/binaries.list
 KCONFIG_BASE=globalconfig
 KCONFIG=fullkbt
 
-ELFDUMP=ELFIO/examples/elfdump/elfdump
 # with what file output to test ./interpret,
 # see gdb_interpret and similar below
 INTERPRET_TEST_MODE?=interpreted
@@ -130,7 +132,7 @@ build:
 	cd $(BASE_PATH) && sudo                          \
 		./start_docker.sh                            \
 		./docker.sh                                  \
-		__build__
+		build
 
 $D/%.traced: $(SAMPLE_PATH)/%.traced
 	mkdir -p $(@D)
@@ -201,7 +203,7 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 
 %.cleaned.svg: %.cleaned
 	# read in the qsort debug print output and plot the left/right distribution
-	python3 ../../../qsort/server/src/plot_steps.py $<
+	python3 $(L4DIR)/pkg/qsort/server/src/plot_steps.py $<
 
 %.pdf: %.svg
 	rsvg-convert -f pdf -o $@ $<
@@ -289,6 +291,12 @@ l4_config:
 		./start_docker.sh                                         \
 		make -C /build/amd64/l4 menuconfig
 
+.PHONY: docker_bash
+docker_bash:
+	cd $(BASE_PATH) && sudo                                       \
+		./start_docker.sh                                         \
+		bash
+
 .PHONY: sample_length
 sample_length:
 	./length_of_data.sh $(CLEANED)
@@ -331,20 +339,17 @@ gdb_decompress: test_compress $(COMPRESSED)
 
 	gdb -tui --command=test_decompress.gdb ./decompress
 
-$(BASE_PATH)/$(ELFDUMP):
-	cd $(BASE_PATH)/ELFIO/; cmake .
-	make -C $(BASE_PATH)/ELFIO/ elfdump
+$(ELFIO_PATH)/$(ELFDUMP):
+	cd $(ELFIO_PATH); cmake .
+	make -C $(ELFIO_PATH)/ elfdump
 
-$O/fiasco.elfdump: $(BASE_PATH)/$(ELFDUMP)
+$O/fiasco.elfdump: $(ELFIO_PATH)/$(ELFDUMP)
 	target=$$(pwd)/$@; \
-	cd $(BASE_PATH); \
-		$(ELFDUMP) __build__/amd64/fiasco/fiasco.debug | tee $$target
+	$(ELFIO_PATH)/$(ELFDUMP) $(FIASCO_BUILD_PATH)/fiasco.debug \
+		| tee $$target
 
 $O/%.disas:
-	export link=$$(readlink $(BINARY_DIR)/$*)             && \
-	export file=$(BASE_PATH)$${link/build/__build__}      && \
-	echo "file: $$file"                                   && \
-	objdump -lSd  "$$file" > $@
+	objdump -lSd $(BASE_PATH)$$(readlink $(BINARY_DIR)/$*) > $@
 
 .PHONY: clear
 clear:
