@@ -7,6 +7,11 @@ argparser.add_argument(
     "filename",
 )
 argparser.add_argument(
+    "--lang",
+    default = "en",
+    help = "which language, currently 'de', 'en' (default)",
+)
+argparser.add_argument(
     "--do-min",
     default = True,
     help = "do estimation on minima per group",
@@ -103,10 +108,14 @@ def make_lang(unit_text):
         "xlabel": f"stack depth in frames",
         "rlabel": f"trace time in {unit_text}",
         "elabel": f"linear approximation of the durations",
-        "llabel": f"number of traces of this depth",
+        "llabel": f"number of traces of this depth              ",
         "depth": "depth",
     }
-    return de
+    if args.lang == "de":
+        return de
+    elif args.lang == "en":
+        return en
+    raise ValueError(f"unknown language '{args.lang}'")
 
 def do_style(legend_facecolor = None):
     try:
