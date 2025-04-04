@@ -356,7 +356,7 @@ clear:
 	rm -rf data/$(LABEL)
 
 .PHONY: clean
-clean:
+clear_data:
 	# note: does not remove .cleaned or .traced files, because tracing takes so long
 	rm -f \
 		$D/*.btb $D/*.compressed $D/*.interpreted $D/*.folded $D/*.svg \
