@@ -14,4 +14,9 @@
 - documentation on setup and patches/branches
     - evtl. fl4mer-base tag an ersten fl4mer-commit in den branches
 
+## refactorings
 
+- block.h should be rewritten in nice and clean cpp
+    - probably remove the supposed redundancy
+    - or at least the reorderability
+    - but add more checks
