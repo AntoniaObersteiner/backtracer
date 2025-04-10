@@ -13,7 +13,7 @@ for f in $(ls $path); do
 		if [ -f $(readlink $path/$f) ]; then
 			echo "$f: $(readllink $path/$f)" >> $output_file
 		else
-			rebased=$(readlink $path/$f | sed 's+/build+../../../../__build__+')
+			rebased=$(readlink $path/$f | sed 's+/build+../../../../build+')
 			if [ -f $rebased ]; then
 				echo "$f: $rebased" >> $output_file
 			fi
@@ -27,4 +27,4 @@ for f in $(ls $path); do
 	fi
 done
 
-echo "KERNEL: ../../../../__build__/amd64/fiasco/fiasco.debug" >> $output_file
+echo "KERNEL: ../../../../build/amd64/fiasco/fiasco.debug" >> $output_file
