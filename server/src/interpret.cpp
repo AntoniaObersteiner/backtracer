@@ -191,13 +191,19 @@ void interpret(
 			if (entry.attribute("entry_type") == BTE_STACK) {
 				static size_t durations_counter = 0;
 				if (durations_counter == 0) {
-					std::string output = "timer_step,stack_depth,ns_duration";
+					std::string output = "timer_step,stack_depth,ns_duration,ns_interval";
 					output_streams.line(output, entry.attribute("cpu_id"));
 				}
+				uint64_t interval_ns = (
+					previous_entry
+					? entry.attribute("tsc_time") - previous_entry->attribute("tsc_time")
+					: 0
+				);
 				std::string output = (
 					std::to_string(entry.attribute("timer_step"))   + "," +
 					std::to_string(entry.attribute("stack_depth"))  + "," +
-					std::to_string(entry.attribute("tsc_duration"))
+					std::to_string(entry.attribute("tsc_duration")) + "," +
+					std::to_string(interval_ns)
 				);
 				output_streams.line(output, entry.attribute("cpu_id"));
 				durations_counter ++;
