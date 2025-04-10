@@ -10,13 +10,13 @@ I=../include
 O=./objects
 # data (intermediate objects and samples
 D=./data
-ARCH=amd64
+ARCH?=amd64
 PKGDIR=..
 L4DIR=$(PKGDIR)/../..
-BASE_PATH=../../../..
-BUILD_PATH=$(BASE_PATH)/build
-FIASCO_BUILD_PATH=$(BUILD_PATH)/$(ARCH)/fiasco
-L4RE_BUILD_PATH=$(BUILD_PATH)/$(ARCH)/l4
+BASE_PATH?=../../../..
+BUILD_PATH?=$(BASE_PATH)/build
+FIASCO_BUILD_PATH?=$(BUILD_PATH)/$(ARCH)/fiasco
+L4RE_BUILD_PATH?=$(BUILD_PATH)/$(ARCH)/l4
 
 FLAME_GRAPH:=$(PKGDIR)/FlameGraph
 ELFIO_PATH:=$(PKGDIR)/ELFIO
@@ -65,8 +65,8 @@ MODULE?=qsort
 # directory in data/ to save results to, used to differentiate configurations
 LABEL?=any
 
-SAMPLE_RELPATH=docker_log
-SAMPLE_PATH=$(BASE_PATH)/$(SAMPLE_RELPATH)
+SAMPLE_RELPATH?=docker_log
+SAMPLE_PATH?=$(BASE_PATH)/$(SAMPLE_RELPATH)
 
 SAMPLE:=$(SAMPLE_PATH)/$(MODULE).traced
 CLEANED:=$D/$(MODULE).cleaned
@@ -74,8 +74,8 @@ COMPRESSED:=$D/$(MODULE).compressed
 BUFFER:=$D/$(MODULE).btb
 INTERPRETED:=$D/$(MODULE).interpreted
 
-BINARY_DIR=$(L4RE_BUILD_PATH)/bin/amd64_gen/l4f/.debug
-BINARY_LIST=$D/binaries.list
+BINARY_DIR?=$(L4RE_BUILD_PATH)/bin/amd64_gen/l4f/.debug
+BINARY_LIST?=$D/binaries.list
 
 # these are filenames of kernel configs (without .out/.h)
 # $(FIASCO_BUILD_PATH) is always prepended
