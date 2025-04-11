@@ -17,6 +17,8 @@ BASE_PATH?=../../../..
 BUILD_PATH?=$(BASE_PATH)/build
 FIASCO_BUILD_PATH?=$(BUILD_PATH)/$(ARCH)/fiasco
 L4RE_BUILD_PATH?=$(BUILD_PATH)/$(ARCH)/l4
+# if "" or "y", rebuild. if "n", don't
+DOCKER_BUILD?=
 
 FLAME_GRAPH:=$(PKGDIR)/FlameGraph
 ELFIO_PATH:=$(PKGDIR)/ELFIO
@@ -123,6 +125,7 @@ $(BINARY_LIST): $(BINARY_DIR) list_binaries.sh
 $(SAMPLE_PATH)/%.traced:
 	cd $(BASE_PATH) && sudo                          \
 		OUTPUT=$(subst $(BASE_PATH)/,,$@)            \
+		BUILD=$(DOCKER_BUILD)                        \
 		./start_docker.sh                            \
 		./docker.sh                                  \
 		$*-backtraced
