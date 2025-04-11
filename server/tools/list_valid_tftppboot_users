@@ -1,0 +1,1 @@
+ ll -w1 /tftpboot/ | egrep '/$' | cut -d'>' -f2 | cut -d'/' -f 3 | sort -u
