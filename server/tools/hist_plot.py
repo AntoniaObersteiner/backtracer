@@ -36,7 +36,8 @@ def make_estimator(data, unit):
 
     X = (depths    * counts).sum() / counts.sum()
     Y = (durations * counts).sum() / counts.sum()
-    b = (counts * (depths - X) * (durations - Y)).sum() / (counts * (depths - X)**2).sum()
+    variance = (counts * (depths - X)**2).sum()
+    b = (counts * (depths - X) * (durations - Y)).sum() / variance if variance != 0 else 0
     a = Y - b * X
     linear_estimator = lambda depth: a + b * depth
 
@@ -76,7 +77,8 @@ def make_estimator_from_raw(data, unit):
 
     X = depths   .sum() / total_count
     Y = durations.sum() / total_count
-    b = ((depths - X) * (durations - Y)).sum() / ((depths - X)**2).sum()
+    variance = ((depths - X)**2).sum()
+    b = ((depths - X) * (durations - Y)).sum() / variance if variance != 0 else 0
     a = Y - b * X
     linear_estimator = lambda depth: a + b * depth
 
