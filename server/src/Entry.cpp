@@ -52,9 +52,9 @@ std::string Entry::to_string () const {
 		if (name == "task_id") {
 			result += std::format("  {:16}: {:16x} {}\n", name, value, task_binaries(value));
 		} else if (name == "tsc_time") {
-			result += std::format("  {:16}: {:16x} {:13.09f} s\n", name, value, static_cast<double>(value) / 1000000000.0);
+			result += std::format("  {:16}: {:16x} {:13.09f} s\n", name, value, value / 1000000000.0);
 		} else if (name == "tsc_duration") {
-			result += std::format("  {:16}: {:16x} {:13.03f} µs\n", name, value, static_cast<double>(value) / 1000.0);
+			result += std::format("  {:16}: {:16x} {:13.03f} µs\n", name, value, value / 1000.0);
 		} else {
 			if (value < 10)
 				result += std::format("  {:16}: {:16x}\n", name, value);
