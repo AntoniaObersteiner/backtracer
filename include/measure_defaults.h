@@ -2,7 +2,7 @@
 // this file is written by measure.py to automate overhead measurements
 static const l4_uint64_t us_sleep_before_tracing = 120000;
 static const l4_uint64_t trace_interval_count = 1;
-static const l4_uint64_t us_trace_intervals [] = {1000};
+static const l4_uint64_t us_trace_intervals [] = {50};
 static const l4_uint64_t measure_rounds = 1;
 static const int do_overhead = 0;
 // for backtracer/main.cc

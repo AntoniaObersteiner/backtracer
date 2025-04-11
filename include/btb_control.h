@@ -197,10 +197,7 @@ l4_debugger_backtracing_reset(l4_cap_idx_t cap) L4_NOTHROW {
 
 static inline l4_msgtag_t
 l4_debugger_backtracing_set_timestep(l4_cap_idx_t cap, l4_uint64_t trace_interval_us) L4_NOTHROW {
-	// assumes tick is 1 ms
-	l4_uint64_t trace_interval_ticks = trace_interval_us / 1000;
-
-	return l4_debugger_backtracing_control_2(cap, BTB_CONTROL_SET_TIMESTEP, trace_interval_ticks);
+	return l4_debugger_backtracing_control_2(cap, BTB_CONTROL_SET_TIMESTEP, trace_interval_us);
 }
 
 static inline l4_msgtag_t
