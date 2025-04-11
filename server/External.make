@@ -173,6 +173,9 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 %.durations.svg: %.durations ./tools/hist_plot.py
 	./tools/hist_plot.py $<
 
+%.runnings.svg: %.durations ./tools/durations.py
+	./tools/durations.py $<
+
 %.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
 	$(FLAME_GRAPH)/flamegraph.pl \
 		$(FLAME_GRAPH_OPTIONS) \
@@ -228,6 +231,7 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 		$*.histogram.pdf \
 		$*.durations.svg \
 		$*.durations.pdf \
+		$*.runnings.svg \
 		|& tee $@
 	
 	# making the .folded file also creates the -0.folded, -1.folded, ...
