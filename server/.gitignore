@@ -29,3 +29,4 @@ test_decompress.gdb
 *.elfdump
 *.o
 *.d
+tools/__pycache__/
