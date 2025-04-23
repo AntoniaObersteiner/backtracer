@@ -3,6 +3,14 @@
 This package contains the tools to interface with the Fiasco JDB Backtracing
 including exporting the results.
 
+# Installing / Packages
+
+For an example on how to install all needed packages, see `install.sh`. Adapt and use
+what you need in an existing L4Re development environment. In case there's a bug,
+a look at the structures in
+[my docker- and submodule-based version](https://gitlab.hrz.tu-chemnitz.de/anob943c-at-tu-dresden.de/fl4mer)
+might be useful, using not branch `fl4mer` but `fl4mer-antonia`.
+
 # Documentation
 
 This package is not currently part of the L4Re operating system.
