@@ -1,6 +1,11 @@
 
 # TODOs and FIXMEs
 
+## bugs
+
+- fiasco seems to have infinite loops with the ring-buffer-like use of the STACK entry
+    - see commit qsort(antonia):042d57b
+
 ## measure.py
 
 - data/qse/\*.svg
