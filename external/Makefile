@@ -158,8 +158,9 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 %.durations.svg: %.durations ./tools/hist_plot.py
 	./tools/hist_plot.py $<
 
-%.runnings.svg: %.durations ./tools/durations.py
-	./tools/durations.py $<
+# temporarily broken, see comment in tools/durations.py
+# %.runnings.svg: %.durations ./tools/durations.py
+# 	./tools/durations.py $<
 
 %.svg: %.folded $(FLAME_GRAPH)/flamegraph.pl
 	$(FLAME_GRAPH)/flamegraph.pl \
@@ -212,9 +213,10 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 		$*.histogram.pdf \
 		$*.durations.svg \
 		$*.durations.pdf \
-		$*.runnings.svg \
 		|& tee $@
 	
+		# $*.runnings.svg \
+
 	# making the .folded file also creates the -0.folded, -1.folded, ...
 	# files for all observed cpu ids. we go through these files
 	# and create svgs for them

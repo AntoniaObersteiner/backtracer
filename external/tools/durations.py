@@ -15,6 +15,9 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+# since some moving round of files, Hist.py has been lost, rendering durations.py broken
+# Hist.py implemented Hist, a Histogram class that could find the bin range that included
+# a certain percentage of counted samples
 from Hist import Hist
 
 def hisplot(data, binrange, binwidth, label):
