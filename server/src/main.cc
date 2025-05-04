@@ -40,12 +40,12 @@ static l4_uint64_t others_control_tracing () {
 }
 
 static l4_uint64_t we_control_tracing () {
-	l4_uint64_t us_sleep_before_tracing = 100000;
-	l4_uint64_t us_trace_interval = 100000;
+	l4_uint64_t us_sleep_before_tracing = 1000;
+	l4_uint64_t us_trace_interval = 2000;
 	l4_uint64_t us_start = measure_start(us_sleep_before_tracing, us_trace_interval);
 
 	// how long to let tracing happen before stopping and exporting.
-	sleep(1);
+	sleep(3);
 
 	return us_start;
 }
