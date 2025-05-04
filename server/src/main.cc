@@ -17,7 +17,7 @@
 #include <l4/backtracer/measure_defaults.h>
 #include <l4/backtracer/measure.h>
 
-#include "src/btb_export.h"
+#include "btb_export.h"
 
 static l4_uint64_t others_control_tracing () {
 	l4_uint64_t us_start = l4_tsc_to_us(l4_rdtsc());
