@@ -18,6 +18,7 @@
 - BUILD_PATHS and similar with ? and documentation
 - documentation on setup and patches/branches
     - evtl. fl4mer-base tag an ersten fl4mer-commit in den branches
+- maybe remove dependency in include/measure*.h* from include/btb_control.h
 
 ## refactorings
 

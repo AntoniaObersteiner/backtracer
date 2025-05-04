@@ -1,4 +1,4 @@
-
+#pragma once
 // this file is written by measure.py to automate overhead measurements
 static const l4_uint64_t us_sleep_before_tracing = 120000;
 static const l4_uint64_t trace_interval_count = 1;

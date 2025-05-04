@@ -1,4 +1,4 @@
-
+#pragma once
 #include <stdbool.h>
 #include <l4/sys/debugger.h>
 #include <l4/sys/debugger.h>

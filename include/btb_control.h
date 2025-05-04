@@ -20,6 +20,8 @@
 #include <l4/re/c/util/kumem_alloc.h>
 #include <sys/mman.h>
 #include "block.h"
+// TODO: maybe remove dependency on measure*.h*
+#include "measure_defaults.h"
 
 #define backtrace_buffer_control_count 8
 enum backtrace_buffer_control {
