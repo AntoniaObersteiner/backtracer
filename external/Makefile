@@ -19,6 +19,7 @@ FIASCO_BUILD_PATH?=$(BUILD_PATH)/$(ARCH)/fiasco
 L4RE_BUILD_PATH?=$(BUILD_PATH)/$(ARCH)/l4
 # if "" or "y", rebuild. if "n", don't
 DOCKER_BUILD?=
+MAKEFLAGS?=
 
 FLAME_GRAPH:=$(PKGDIR)/FlameGraph
 ELFIO_PATH:=$(PKGDIR)/ELFIO
@@ -88,8 +89,10 @@ KCONFIG=fullkbt
 # see gdb_interpret and similar below
 INTERPRET_TEST_MODE?=interpreted
 
+END?=svg
+
 .PHONY: default
-default: $D/$(LABEL)/$(MODULE).svg
+default: $D/$(LABEL)/$(MODULE).$(END)
 
 unpack: $S/unpack.c $(CHEADERS)
 	$(CC) -o $@ $< $(CFLAGS)
@@ -217,8 +220,8 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 %.log:
 	# creating the .log is mostly used to make all the intermediates
 	# without throwing them away because of make's rules for intermediate file
-	make -f External.make $*.traced
-	make -f External.make \
+	make $(MAKEFLAGS) $*.traced
+	make $(MAKEFLAGS) \
 		$*.cleaned \
 		$*.compressed \
 		$*.btb \
@@ -242,7 +245,7 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 	# and create svgs for them
 	# deactivated because we don't to multi-processor currently
 	# for f in $$(ls $*-*.folded); do								  \
-	# 	make -f External.make $${f/folded/svg};					  \
+	# 	make $(MAKEFLAGS) $${f/folded/svg};					  \
 	# done
 
 .PHONY: rsync_to_pas
@@ -263,7 +266,7 @@ L4_CONFIGS=\
 
 .PHONY: pxe_install
 pxe_install:
-	make -f External.make pxe_menu
+	make $(MAKEFLAGS) pxe_menu
 	# copy all needed modules/config to server:boot/
 	rsync -avuP \
 		$(L4_BINARIES) \
@@ -325,11 +328,11 @@ gdb_interpret: interpret $(BUFFER)
 
 .PHONY: gdb_folded
 gdb_folded:
-	make -f External.make INTERPRET_TEST_MODE=folded
+	make $(MAKEFLAGS) INTERPRET_TEST_MODE=folded
 
 .PHONY: gdb_histgram
 gdb_histgram:
-	make -f External.make INTERPRET_TEST_MODE=histogram
+	make $(MAKEFLAGS) INTERPRET_TEST_MODE=histogram
 
 .PHONY: gdb_compress
 gdb_compress: test_compress
