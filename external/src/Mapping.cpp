@@ -12,7 +12,8 @@ Mapping::Mapping (const Entry & entry) : lifetime(Range<>::open_end(0)) {
 		name_chars,
 		payload.size() * sizeof(unsigned long),
 		payload.data(),
-		0
+		0,
+		&is_mapping_name_char
 	);
 	name = std::string(name_chars);
 

@@ -4,16 +4,36 @@
 
 #include "EntryDescriptor.hpp"
 
+bool is_attribute_name_char (char c) {
+	return (
+		c == '_'
+		|| 'a' <= c && c <= 'z'
+		|| '0' <= c && c <= '9'
+	);
+}
+bool is_mapping_name_char (char c) {
+	return (
+		c == '_'
+		|| 'a' <= c && c <= 'z'
+		|| '0' <= c && c <= '9'
+		|| c == '.'
+		|| c == '/'
+		|| c == '-'
+		|| c == '+'
+	);
+}
+
 void assert_attribute_name (
 	const char * attribute_name,
 	unsigned long size_in_words,
 	const uint64_t * buffer,
-	const unsigned long offset
+	const unsigned long offset,
+	bool (* char_check) (char)
 ) {
 	unsigned long size_in_bytes = sizeof(uint64_t) * size_in_words;
 	for (int j = 0; j < size_in_bytes; j++) {
 		char c = attribute_name[j];
-		if ('a' <= c && c <= 'z' || c == '_' || '0' <= c && c <= '9') {
+		if (char_check(c)) {
 			if (j == size_in_bytes - 1) {
 				// not a '\0'?
 				throw std::runtime_error("attribute_name not 0-terminated!");

@@ -34,11 +34,14 @@ static inline constexpr const std::string & entry_type_name (const entry_types t
 // will have used this many uint64_t to descibe itself
 constexpr uint64_t words_per_entry_name = 2;
 
+bool is_attribute_name_char(char c);
+bool is_mapping_name_char(char c);
 void assert_attribute_name (
 	const char * attribute_name,
 	unsigned long size_in_words,
 	const uint64_t * buffer,
-	const unsigned long offset
+	const unsigned long offset,
+	bool (* char_check) (char) = &is_attribute_name_char
 );
 
 class EntryDescriptor : public std::vector<std::string> {
