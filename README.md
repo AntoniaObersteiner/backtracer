@@ -9,27 +9,45 @@ For an example on how to install all needed packages, see `install.sh`. Adapt an
 what you need in an existing L4Re development environment. In case there's a bug,
 a look at the structures in
 [my docker- and submodule-based version](https://gitlab.hrz.tu-chemnitz.de/anob943c-at-tu-dresden.de/fl4mer)
-might be useful, using not branch `fl4mer` but `fl4mer-antonia`.
+might be useful, using not branch `fl4mer` but `fl4mer-antonia`, which uses git submodules.
 
 # Documentation
 
 This package is not currently part of the L4Re operating system.
 This is the documentation:
 
+## Getting a trace
+
+Build your L4Re with the package [backtracer](https://github.com/AntoniaObersteiner/backtracer)
+and add it as a module to a copy of your `<...>.cfg`, that is called `<...>-backtracer.cfg`.
+**(this is stupid, change this)**
+You might want to set `backtracer/include/measure_defaults.h:app_controls_tracing = 0;`
+so that the backtracer just waits for the specified `us_sleep_before_tracing` and then starts tracing.
+The tracing is done in the kernel, so the tracer sleeps
+for `us_backtracer_waits_for_app` and then stops the backtracer.
+**(continue)**
+
+Currently, there is no network support, so you have to rely on the serial console.
+
 ## Usage example
 
-The directory structure is not final. Currently, we live here:
-```bash
-cd server/src
+Currently, this is the directory structure:
+```
+./server/     # L4 "server" that controls backtrace exporting
+./include/    # implements system call wrappers and performance measurement
+./include/measure_defaults.h  # configures server behavior
+./external/   # tools for processing and analyzing stack traces
 ```
 
+### ./external
 This project is controlled via Make, the Makefile is renamed to `External.make`
 to avoid conflict with L4Re's build system
 
-The results are written to `data/`, optionally in subdirectories, that currently have to be explicitly named via `LABEL=`.
+The results are written to `data/`, usually in a subdirectory, that currently has to be explicitly named via `LABEL=`.
 ```bash
-make -f External.make data/qsort.svg
-make -f External.make LABEL=test data/test/qsort.svg
+make LABEL=test data/test/hello.svg
+# equivalent to
+make LABEL=test MODULE=hello ENDING=svg default
 ```
 
 Possible endings that can be substituted for `svg` above:

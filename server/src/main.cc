@@ -45,7 +45,7 @@ static l4_uint64_t we_control_tracing () {
 	l4_uint64_t us_start = measure_start(us_sleep_before_tracing, us_trace_interval);
 
 	// how long to let tracing happen before stopping and exporting.
-	sleep(3);
+	usleep(us_backtracer_waits_for_app);
 
 	return us_start;
 }
