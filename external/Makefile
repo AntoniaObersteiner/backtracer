@@ -19,25 +19,27 @@ FIASCO_BUILD_PATH?=$(BUILD_PATH)/$(ARCH)/fiasco
 L4RE_BUILD_PATH?=$(BUILD_PATH)/$(ARCH)/l4
 MAKEFLAGS?=
 MAKEEXTRA?=Antonia.make
+
+# this should not have stemless targets or redirect it's first target to main file's target 'default'
 include $(MAKEEXTRA)
 
-FLAME_GRAPH:=$(PKGDIR)/FlameGraph
-ELFIO_PATH:=$(PKGDIR)/ELFIO
+FLAME_GRAPH=$(PKGDIR)/FlameGraph
+ELFIO_PATH=$(PKGDIR)/ELFIO
 ELFDUMP=examples/elfdump/elfdump
-FLAME_GRAPH_OPTIONS:=\
+FLAME_GRAPH_OPTIONS=\
 	--subtitle "L4Re/Fiasco Backtracer" \
 	--width 800 \
 	--minwidth 8 \
 
 	#--fonttype "TeX Gyre Schola" \
 
-CFLAGS:= --max-errors=3 -ggdb -I$I
-CXXFLAGS:= --max-errors=3 -ggdb --std=c++20 -I$(ELFIO_PATH) -I$I -MMD -MP
-CHEADERS:=$(addprefix $I/,\
+CFLAGS= --max-errors=3 -ggdb -I$I
+CXXFLAGS= --max-errors=3 -ggdb --std=c++20 -I$(ELFIO_PATH) -I$I -MMD -MP
+CHEADERS=$(addprefix $I/,\
 	block.h \
 )
 
-CXXHEADERS:=$(addprefix $S/,\
+CXXHEADERS=$(addprefix $S/,\
 	elfi.hpp \
 	mmap_file.hpp \
 	rethrow_error.hpp \
@@ -50,7 +52,7 @@ CXXHEADERS:=$(addprefix $S/,\
 	Range.hpp \
 )
 
-CXXOBJECTS:=$(addprefix $O/,\
+CXXOBJECTS=$(addprefix $O/,\
 	elfi.o \
 	interpret.o \
 	mmap_file.o \
@@ -62,7 +64,7 @@ CXXOBJECTS:=$(addprefix $O/,\
 	SymbolTable.o \
 )
 
-CXXDEPENDENCIES := $(addprefix $O/,$(CXXOBJECTS:.o=.d))
+CXXDEPENDENCIES = $(addprefix $O/,$(CXXOBJECTS:.o=.d))
 
 MODULE?=qsort
 # directory in data/ to save results to, used to differentiate configurations
@@ -71,11 +73,11 @@ LABEL?=any
 # set here, in the environment, in another Makefile, ...
 SAMPLE_PATH?=
 
-SAMPLE:=$(SAMPLE_PATH)/$(MODULE).traced
-CLEANED:=$D/$(MODULE).cleaned
-COMPRESSED:=$D/$(MODULE).compressed
-BUFFER:=$D/$(MODULE).btb
-INTERPRETED:=$D/$(MODULE).interpreted
+SAMPLE=$(SAMPLE_PATH)/$(MODULE).traced
+CLEANED=$D/$(MODULE).cleaned
+COMPRESSED=$D/$(MODULE).compressed
+BUFFER=$D/$(MODULE).btb
+INTERPRETED=$D/$(MODULE).interpreted
 
 BINARY_DIR?=$(L4RE_BUILD_PATH)/bin/amd64_gen/l4f/.debug
 BINARY_LIST?=$D/binaries.list
