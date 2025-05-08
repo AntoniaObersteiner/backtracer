@@ -9,7 +9,7 @@ For an example on how to install all needed packages, see `install.sh`. Adapt an
 what you need in an existing L4Re development environment. In case there's a bug,
 a look at the structures in
 [my docker- and submodule-based version](https://gitlab.hrz.tu-chemnitz.de/anob943c-at-tu-dresden.de/fl4mer)
-might be useful, using not branch `fl4mer` but `fl4mer-antonia`, which uses git submodules.
+might be useful, using not branch `fl4mer` but `fl4mer-antonia`.
 
 # Documentation
 
@@ -19,17 +19,42 @@ This is the documentation:
 ## Getting a trace
 
 Build your L4Re with the package [backtracer](https://github.com/AntoniaObersteiner/backtracer)
-and add it as a module to a copy of your `<...>.cfg`, that is called `<...>-backtracer.cfg`.
-**(this is stupid, change this)**
-You might want to set `backtracer/include/measure_defaults.h:app_controls_tracing = 0;`
-so that the backtracer just waits for the specified `us_sleep_before_tracing` and then starts tracing.
-The tracing is done in the kernel, so the tracer sleeps
-for `us_backtracer_waits_for_app` and then stops the backtracer.
-**(continue)**
+and add it as a module to your `<...>.cfg`.
+If you want to work with `Antonia.make`, call your config `<...>-backtracer.cfg`.
+You might want to set `backtracer/include/measure_defaults.h:app_controls_tracing = 0`
+so that the backtracer is time-controlled.
+It first waits `us_sleep_before_tracing` µs, starts the tracing,
+waits for `us_backtracer_waits_for_app` µs and then stops the backtracer and exports.
+
+Alternatively, set `app_controls_tracing = 1` and start and stop the kernel-tracer from your application
+using the debug-capability. This would be a minimal example:
+
+```cpp
+#include <stdio.h>
+#include <l4/backtracer/btb_control.h>  // defines l4_debugger_backtracing_*
+#include <l4/backtracer/measure.h> // defines dbg_cap default
+
+int main(void) {
+	l4_debugger_backtracing_start(dbg_cap);
+	for (int i = 0; i < 100; i++) {
+		puts("Hello World");
+	}
+	l4_debugger_backtracing_stop(dbg_cap);
+}
+```
+
+The backtracer -- when given `app_controls_tracing == 1` -- records the number of words in the backtrace buffer.
+Once that number changes, it waits until the kernel reports that tracing was stopped and starts printing.
+Direct control of the app over the backtracer -- ideally via IPC or as a library -- is planned.
+
+It may happen that the backtracer is not scheduled until the traced program(s) have already stopped the tracing.
+If this is a problem, set `backtracer/include/measure_defaults.h:rounds_backtracer_waits_for_start = 1`
+or another small number so it doesn't wait for 20 rounds (=20 seconds), as is the default.
 
 Currently, there is no network support, so you have to rely on the serial console.
+Capture the print-out to a `.traced` file.
 
-## Usage example
+## Processing the Sample
 
 Currently, this is the directory structure:
 ```

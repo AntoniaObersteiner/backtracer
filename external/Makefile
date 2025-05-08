@@ -225,14 +225,6 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 	# 	make $(MAKEFLAGS) $${f/folded/svg};					  \
 	# done
 
-L4_BINARIES=\
-	$(shell find $(L4RE_BUILD_PATH)/bin/amd64_gen/l4f/ -maxdepth 1 -type f) \
-	$(FIASCO_BUILD_PATH)/fiasco \
-	$(L4RE_BUILD_PATH)/bin/amd64_gen/plain/bootstrap \
-
-L4_CONFIGS=\
-	$(shell find $(BASE_PATH)/l4/conf/examples/ -name '*-backtraced.cfg')
-
 .PHONY: clear
 clear:
 	rm -rf data/$(LABEL)

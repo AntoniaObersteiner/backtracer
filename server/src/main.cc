@@ -24,7 +24,11 @@ static l4_uint64_t others_control_tracing () {
 
 	l4_uint64_t btb_words_start = get_btb_words_no_entry();
 	l4_uint64_t us_sleeptime = 1 * 1000 * 1000; // 1 second
-	while (get_btb_words_no_entry() - btb_words_start == 0) {
+	for (
+		int not_started_count = 0;
+		not_started_count <= rounds_backtracer_waits_for_start && get_btb_words_no_entry() - btb_words_start == 0;
+		not_started_count ++
+	) {
 		if (ubt_debug)
 			printf("backtracing has not written anything yet, wait...\n");
 		l4_usleep(us_sleeptime);

@@ -14,6 +14,19 @@ KCONFIG=fullkbt
 # see gdb_interpret and similar below
 INTERPRET_TEST_MODE?=interpreted
 
+# things to copy into pxe-boot directories
+L4_BINARIES=\
+	$(shell find $(L4RE_BUILD_PATH)/bin/amd64_gen/l4f/ -maxdepth 1 -type f) \
+	$(FIASCO_BUILD_PATH)/fiasco \
+	$(L4RE_BUILD_PATH)/bin/amd64_gen/plain/bootstrap \
+
+L4_CONFIGS=\
+	$(shell find $(BASE_PATH)/l4/conf/examples/ -name '*-backtraced.cfg')
+
+# this first rule of the this file redirect to the first rule of the main Makefile
+.PHONY: _extra_default
+_extra_default: default
+
 %.serial:
 	sudo minicom -D /dev/ttyUSB0 -C $@
 
