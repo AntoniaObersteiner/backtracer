@@ -89,10 +89,10 @@ KCONFIG=fullkbt
 # see gdb_interpret and similar below
 INTERPRET_TEST_MODE?=interpreted
 
-END?=svg
+ENDING?=svg
 
 .PHONY: default
-default: $D/$(LABEL)/$(MODULE).$(END)
+default: $D/$(LABEL)/$(MODULE).$(ENDING)
 
 unpack: $S/unpack.c $(CHEADERS)
 	$(CC) -o $@ $< $(CFLAGS)
