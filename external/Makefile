@@ -80,6 +80,7 @@ BUFFER=$D/$(MODULE).btb
 INTERPRETED=$D/$(MODULE).interpreted
 
 BINARY_DIR?=$(L4RE_BUILD_PATH)/bin/amd64_gen/l4f/.debug
+LIBRARY_DIR?=$(L4RE_BUILD_PATH)/lib/amd64_gen/std/l4f/.debug
 BINARY_LIST?=$D/binaries.list
 
 # these are filenames of kernel configs (without .out/.h)
@@ -118,8 +119,10 @@ $D/%.interpreted:
 $O/%.o: $S/%.cpp
 	$(CXX) $< -c -o $@ $(CXXFLAGS)
 
-$(BINARY_LIST): $(BINARY_DIR) list_binaries.sh
+$(BINARY_LIST): $(BINARY_DIR) $(LIBRARY_DIR) list_binaries.sh
+	./list_binaries.sh "" $@
 	./list_binaries.sh $< $@
+	./list_binaries.sh $(LIBRARY_DIR) $@
 
 $D/%.traced: $(SAMPLE_PATH)/%.traced
 	mkdir -p $(@D)

@@ -1,13 +1,19 @@
 path=$1
 output_file=$2
+
+# this script is built to be run first with empty first arg 
+# and then subsequently with directories to read binaries from
+if [ -z "$path" ]; then
+	echo "clearing and writing KERNEL to '$output_file'"
+	echo "KERNEL: ../../../../build/amd64/fiasco/fiasco.debug" > $output_file
+	exit
+fi
 if [ ! -d $path ]; then
 	echo "'$path' is not a valid path from pwd $(pwd)!";
 	exit
 fi
 
-echo "clearing and writing '$output_file'"
-echo "" > $output_file
-
+echo "adding to '$output_file' from '$path'"
 for f in $(ls $path); do
 	if [ -L $path/$f ]; then
 		if [ -f $(readlink $path/$f) ]; then
@@ -27,4 +33,3 @@ for f in $(ls $path); do
 	fi
 done
 
-echo "KERNEL: ../../../../build/amd64/fiasco/fiasco.debug" >> $output_file
