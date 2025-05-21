@@ -231,6 +231,9 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 clear:
 	rm -rf data/$(LABEL)
 
+.PHONY: redo
+redo: clear default
+
 .PHONY: clean
 clear_data:
 	# note: does not remove .cleaned or .traced files, because tracing takes so long
