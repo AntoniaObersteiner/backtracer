@@ -23,8 +23,10 @@ and add it as a module to your `<...>.cfg`.
 If you want to work with `Antonia.make`, call your config `<...>-backtracer.cfg`.
 You might want to set `backtracer/include/measure_defaults.h:app_controls_tracing = 0`
 so that the backtracer is time-controlled.
-It first waits `us_sleep_before_tracing` µs, starts the tracing,
+It first waits `us_sleep_before_tracing` µs, starts the tracing, then
 waits for `us_backtracer_waits_for_app` µs and then stops the backtracer and exports.
+
+### App-Control
 
 Alternatively, set `app_controls_tracing = 1` and start and stop the kernel-tracer from your application
 using the debug-capability. This would be a minimal example:
