@@ -54,10 +54,10 @@ std::optional<Symbol> Mapping::find_symbol (
 		time_in_ns,
 		static_cast<double>(time_in_ns) / 1000000000.0,
 		(lifetime.contains(time_in_ns) ? "" : "not "),
-		(lifetime.contains(time_in_ns) ? "" : (
-		symbol_table.find_symbol(virtual_address) ?
-		symbol_table.find_symbol(virtual_address)->name : ""
-		))
+		(lifetime.contains(time_in_ns) ? (
+		symbol_table.find_symbol(virtual_address - base) ?
+		symbol_table.find_symbol(virtual_address - base)->name : ""
+		) : "")
 	) << std::endl;
 
 	if (!lifetime.contains(time_in_ns))
