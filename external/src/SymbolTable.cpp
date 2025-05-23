@@ -30,6 +30,12 @@ SymbolTable::SymbolTable (
 					type, section_index, other
 				);
 
+				// symbols with length 0 are currently not used by our consumers
+				// despite the facte that e.g. interrupt handlers of fiasco have length 0
+				// and maybe should get a default length so they can be shown
+				if (size == 0)
+					continue;
+
 				const Range instruction_addresses { value, size };
 				const Range pages = instruction_addresses.rounded(0x1000);
 
