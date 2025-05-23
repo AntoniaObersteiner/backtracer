@@ -234,7 +234,14 @@ int main(int argc, char * argv []) {
 	BinariesList binaries_list { binaries_list_filename };
 
 	for (const auto &[name, path] : binaries_list) {
-		binary_symbols.emplace(name, SymbolTable(name, get_elfio_reader(path)));
+		binary_symbols.emplace(
+			std::piecewise_construct,
+			std::forward_as_tuple(name),
+			std::forward_as_tuple(
+				name,
+				get_elfio_reader(path)
+			)
+		);
 	}
 
 	std::cout << std::endl;

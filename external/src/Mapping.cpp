@@ -77,7 +77,7 @@ bool Mappings::has_mapping (unsigned long task_id, const std::string & name) con
 
 void Mappings::append (const Entry & entry) {
 	super().emplace_back(entry);
-	Mapping & mapping = self()[super().size() - 1];
+	Mapping & mapping = self().at(super().size() - 1);
 	by_task_and_binary[std::make_pair(mapping.name, mapping.task_id)] = super().size() - 1;
 	binaries_by_task[mapping.task_id].emplace_back(mapping.name);
 
@@ -123,7 +123,14 @@ std::string Mappings::lookup_symbol (
 				"mapping of '" + binary + "', task " + std::to_string(task_id) + " is invalid?"
 			);
 		}
-		SymbolTable & symbol_table = binary_symbols[binary];
+		if (!binary_symbols.contains(binary)) {
+			throw std::runtime_error(
+				"binary_symbols has no entry for '" + binary + "', "
+				"but task " + std::to_string(task_id) + " references it?"
+			);
+		}
+
+		SymbolTable & symbol_table = binary_symbols.at(binary);
 		std::optional<Symbol> looked_up = mapping.find_symbol(symbol_table, virtual_address, time_in_ns);
 		if (!looked_up)
 			continue;

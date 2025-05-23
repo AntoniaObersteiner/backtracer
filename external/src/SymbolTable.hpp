@@ -68,7 +68,7 @@ public:
 		const ELFIO::elfio & reader
 	);
 
-	SymbolTable () : binary("<uninitialized SymbolTable>") {}
+	// SymbolTable () : binary("<uninitialized SymbolTable>") {}
 
 	std::optional<Symbol> find_symbol (const uint64_t instruction_pointer) const;
 };

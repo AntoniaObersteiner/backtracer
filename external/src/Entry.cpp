@@ -64,7 +64,7 @@ std::string Entry::to_string () const {
 	}
 	for (size_t i = 0; i < payload.size(); i++) {
 		if (attribute("entry_type") == BTE_STACK) {
-			std::string symbol_name = get_symbol_name(payload[i], super().at("tsc_time"));
+			std::string symbol_name = get_symbol_name(payload[i], attribute("tsc_time"));
 			result += std::format("  {:15} : {:16x} {}\n", i, payload[i], symbol_name);
 		} else if (attribute("entry_type") == BTE_MAPPING) {
 			const char * name = reinterpret_cast<const char *>(&payload[i]);
@@ -90,9 +90,9 @@ std::string Entry::folded (
 
 	std::string result;
 	if (with_cpu_id)
-		result += "cpu_" + std::to_string(super().at("cpu_id")) + ";";
+		result += "cpu_" + std::to_string(attribute("cpu_id")) + ";";
 	for (ssize_t i = payload.size() - 1; i >= 0; i--) {
-		std::string symbol_name = get_symbol_name(payload[i], super().at("tsc_time"));
+		std::string symbol_name = get_symbol_name(payload[i], attribute("tsc_time"));
 		result += symbol_name;
 		if (i > 0)
 			result += ";";
