@@ -2,7 +2,6 @@
 #include <iostream>
 #include <cstdint>
 #include <vector>
-#include <map>
 #include <fstream>
 #include <memory>
 #include <format>
@@ -11,6 +10,7 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 
+#include "map_with_errors.hpp"
 #include "Entry.hpp"
 #include "SymbolTable.hpp"
 
@@ -57,8 +57,8 @@ public:
 	Super const & super () const { return dynamic_cast<const Super &>(*this); }
 
 	Mappings ();
-	std::map<std::pair<std::string, unsigned long>, unsigned int> by_task_and_binary;
-	std::map<unsigned long, std::vector<std::string>> binaries_by_task;
+	map_with_errors<std::pair<std::string, unsigned long>, unsigned int> by_task_and_binary;
+	map_with_errors<unsigned long, std::vector<std::string>> binaries_by_task;
 
 	bool has_mapping (unsigned long task_id, const std::string & name) const;
 

@@ -1,8 +1,8 @@
 #pragma once
-#include <map>
+#include "map_with_errors.hpp"
 #include <regex>
 
-class BinariesList : public std::map<std::string, std::string> {
+class BinariesList : public map_with_errors<std::string, std::string> {
 public:
 	using Self  = BinariesList;
 	using Super = std::map<std::string, std::string>;

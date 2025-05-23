@@ -1,7 +1,7 @@
 #pragma once
 #include <optional>
-#include <map>
 
+#include "map_with_errors.hpp"
 #include "elfi.hpp"
 #include "Range.hpp"
 
@@ -50,9 +50,9 @@ public:
 	}
 };
 
-class SymbolTable : private std::map <uint64_t, SymbolPage> {
+class SymbolTable : public map_with_errors<uint64_t, SymbolPage> {
 public:
-	using Super = std::map<uint64_t, SymbolPage>;
+	using Super = map_with_errors<uint64_t, SymbolPage>;
 	using Self = SymbolTable;
 	Self        & self  ()       { return *this; }
 	Self  const & self  () const { return *this; }
@@ -73,4 +73,4 @@ public:
 	std::optional<Symbol> find_symbol (const uint64_t instruction_pointer) const;
 };
 
-extern std::map<std::string, SymbolTable> binary_symbols;
+extern map_with_errors<std::string, SymbolTable> binary_symbols;

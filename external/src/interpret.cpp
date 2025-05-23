@@ -133,7 +133,7 @@ public:
 };
 
 Mappings mappings;
-std::map<std::string, SymbolTable> binary_symbols;
+map_with_errors<std::string, SymbolTable> binary_symbols;
 
 void interpret(
 	const std::span<uint64_t> buffer,

@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
-#include <map>
 #include <vector>
 #include <string>
+#include "map_with_errors.hpp"
 
 enum entry_types {
 	// BTE: BackTrace Entry
@@ -45,7 +45,7 @@ void assert_attribute_name (
 );
 
 class EntryDescriptor : public std::vector<std::string> {
-	std::map<std::string, uint64_t> attribute_offsets;
+	map_with_errors<std::string, uint64_t> attribute_offsets;
 	using Self = EntryDescriptor;
 	Self & self () { return *this; }
 
@@ -58,7 +58,7 @@ public:
 		const uint64_t length_in_words
 	) const;
 };
-class EntryDescriptorMap : public std::map<entry_types, EntryDescriptor> {
+class EntryDescriptorMap : public map_with_errors<entry_types, EntryDescriptor> {
 	using Self = EntryDescriptorMap;
 	Self & self () { return *this; }
 
