@@ -17,6 +17,9 @@ Mapping::Mapping (const Entry & entry) : lifetime(Range<>::open_end(0)) {
 	);
 	name = std::string(name_chars);
 
+	if (name.find('/') == std::string::npos)
+		name = "rom/" + name;
+
 	base = entry.attribute("mapping_base");
 	task_id = entry.attribute("mapping_task_id");
 

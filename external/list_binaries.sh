@@ -17,16 +17,16 @@ echo "adding to '$output_file' from '$path'"
 for f in $(ls $path); do
 	if [ -L $path/$f ]; then
 		if [ -f $(readlink $path/$f) ]; then
-			echo "$f: $(readllink $path/$f)" >> $output_file
+			echo "rom/$f: $(readllink $path/$f)" >> $output_file
 		else
 			rebased=$(readlink $path/$f | sed 's+/build+../../../../build+')
 			if [ -f $rebased ]; then
-				echo "$f: $rebased" >> $output_file
+				echo "rom/$f: $rebased" >> $output_file
 			fi
 		fi
 	else
 		if [ -x $path/$f ]; then
-			echo "$f: $path/$f" >> $output_file
+			echo "rom/$f: $path/$f" >> $output_file
 		else
 			echo "$path/$f not executable"
 		fi
