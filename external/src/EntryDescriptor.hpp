@@ -29,6 +29,24 @@ static inline constexpr const std::string & entry_type_name (const entry_types t
 		static_cast<uint64_t>(type)
 	));
 }
+template<>
+struct std::formatter<entry_types> : std::formatter<int>, std::formatter<std::string> {
+    // use format specifiers for int
+    using std::formatter<int>::parse;
+
+    auto format(entry_types const & entry_type, auto & ctx) const {
+        auto out = ctx.out();
+        out = std::format_to(out, "[");
+
+        ctx.advance_to(out);
+        out = std::formatter<int>::format(static_cast<int>(entry_type), ctx);
+        out = std::format_to(out, " ");
+        ctx.advance_to(out);
+        out = std::formatter<std::string>::format(entry_type_name(entry_type), ctx);
+
+        return std::format_to(out, "]");
+    }
+};
 
 // a string like 'tsc_duration' that descibes an entry attribute
 // will have used this many uint64_t to descibe itself
