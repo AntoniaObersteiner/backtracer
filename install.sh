@@ -45,8 +45,8 @@ make -C build/amd64/fiasco -j 8
 
 make -C build/amd64/l4 E=hello-backtraced qemu \
 	QEMU_OPTIONS="-nographic -m 512 -enable-kvm -cpu host -M pc-i440fx-7.2 -smp cpus=1" \
-	MODULE_SEARCH_PATH="build/amd64/fiasco:l4/conf/examples" \
-	>> hello.traced
+	MODULE_SEARCH_PATH="$(pwd)/build/amd64/fiasco:$(pwd)/l4/conf/examples" \
+	|& tee hello.traced
 
 make -C l4/pkg/backtracer/external \
 	EXTRAMAKE= \
