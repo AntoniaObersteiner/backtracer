@@ -33,7 +33,7 @@ public:
 		task_id(task_id),
 		lifetime(lifetime)
 	{
-		dbg ();
+		// dbg ();
 	}
 
 	void dbg () const;

@@ -39,12 +39,6 @@ SymbolTable::SymbolTable (
 				const Range instruction_addresses { value, size };
 				const Range pages = instruction_addresses.rounded(0x1000);
 
-				if (false) std::cout << std::format("{:30}: {:30} = {:30} has {}",
-					binary,
-					instruction_addresses.to_string(std::hex),
-					pages.to_string(std::hex),
-					name
-				) << std::endl;
 				for (const auto & page : pages) {
 					super()[page].emplace_back(
 						name, binary,
@@ -58,10 +52,9 @@ SymbolTable::SymbolTable (
 
 std::optional<Symbol> SymbolTable::find_symbol (const uint64_t instruction_pointer) const {
 	uint64_t page_address = (instruction_pointer / 0x1000) * 0x1000;
+
 	if (!super().contains(page_address))
 		return std::optional<Symbol> ();
-
-	if (false) std::cout << std::format("paddr {:16x}", page_address) << std::endl;
 
 	const SymbolPage & symbol_page = super().at(page_address);
 	return symbol_page.find_symbol(instruction_pointer);

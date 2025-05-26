@@ -244,8 +244,6 @@ int main(int argc, char * argv []) {
 		);
 	}
 
-	std::cout << std::endl;
-
 	const std::span<uint64_t> buffer = mmap_file(tracebuffer_filename);
 	printf("buffer: %p\n", buffer.data());
 	if (buffer.size() == 0) {

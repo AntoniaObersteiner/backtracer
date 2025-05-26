@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 
 #include "BinariesList.hpp"
 
@@ -50,7 +51,7 @@ BinariesList::BinariesList (std::string filename) {
 		}
 
 		self()[name] = path;
-		std::cout << "binary '" << name << "' at path '" << path << "'" << std::endl;
+		// std::cout << std::format("binary {:30} at path '{}'", name, path) << std::endl;
 	}
 }
 

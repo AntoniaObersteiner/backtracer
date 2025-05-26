@@ -76,7 +76,7 @@ EntryDescriptor::EntryDescriptor (const uint64_t * const buffer, const uint64_t 
 		std::string name { attribute_name };
 		self()[index] = name;
 		attribute_offsets[name] = index;
-		printf("entry type has attribute %ld: '%s'\n", index, attribute_name);
+		if (false) printf("entry type has attribute %ld: '%s'\n", index, attribute_name);
 	}
 }
 

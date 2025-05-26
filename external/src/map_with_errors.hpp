@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <format>
 #include <stdexcept>
 // #include <utility> // c++23: std::unreachable
 

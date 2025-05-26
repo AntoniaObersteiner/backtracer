@@ -28,7 +28,7 @@ Mapping::Mapping (const Entry & entry) : lifetime(Range<>::open_end(0)) {
 		entry.attribute("tsc_time")
 	);
 
-	dbg();
+	// dbg();
 }
 
 void Mapping::dbg () const {
@@ -46,23 +46,6 @@ std::optional<Symbol> Mapping::find_symbol (
 	unsigned long virtual_address,
 	unsigned long time_in_ns
 ) const {
-	if (false) std::cout << std::format(
-		"Mapping[{:30}, {:2x}, {:16x}, {:20} = {:30}]::find_symbol({:16x}, {:16x} = {:8.6} s) -- {:4s}in time -> {}",
-		name,
-		task_id,
-		base,
-		lifetime.to_string(std::hex),
-		lifetime.to<double>().to_string(),
-		virtual_address,
-		time_in_ns,
-		static_cast<double>(time_in_ns) / 1000000000.0,
-		(lifetime.contains(time_in_ns) ? "" : "not "),
-		(lifetime.contains(time_in_ns) ? (
-		symbol_table.find_symbol(virtual_address - base) ?
-		symbol_table.find_symbol(virtual_address - base)->name : ""
-		) : "")
-	) << std::endl;
-
 	if (!lifetime.contains(time_in_ns))
 		return std::optional<Symbol>();
 
