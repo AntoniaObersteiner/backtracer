@@ -1,2 +1,4 @@
 # vim temp files
 *.swp
+external/test_*.gdb
+external/test
