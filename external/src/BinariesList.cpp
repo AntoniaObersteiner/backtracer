@@ -33,10 +33,10 @@ BinariesList::BinariesList (std::string filename) {
 
 		// string match result
 		std::cmatch match;
-		bool matched = std::regex_match(line,  match, line_regex);
+		bool matched = std::regex_match(line, match, line_regex);
 		if (!matched) {
 			throw std::runtime_error(
-				"line '" + std::string(line) + "' is not or the format 'label: filepath'"
+				"line '" + std::string(line) + "' is not of the format 'rom/path: local/filepath'"
 			);
 		}
 

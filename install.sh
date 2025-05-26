@@ -42,6 +42,9 @@ make -C build/amd64/l4     menuconfig
 make -C build/amd64/fiasco menuconfig
 make -C build/amd64/l4     -j 8
 make -C build/amd64/fiasco -j 8
+# weird dependency bugs?
+make -C build/amd64/l4     -j 8
+make -C build/amd64/fiasco -j 8
 
 make -C build/amd64/l4 E=hello-backtraced qemu \
 	QEMU_OPTIONS="-nographic -m 512 -enable-kvm -cpu host -M pc-i440fx-7.2 -smp cpus=1" \
