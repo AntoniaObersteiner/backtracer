@@ -1,15 +1,17 @@
 #pragma once
 // this file can be written by measure.py to automate overhead measurements
+// otherwise, use it to configure the backtracer and its interaction with the traced program
+
 static const l4_uint64_t us_sleep_before_tracing = 120000;
 // in case of !app_controls_tracing, uses first. unit: 1  m  us
-static const l4_uint64_t us_trace_intervals [] =  {     500000 };
+static const l4_uint64_t us_trace_intervals [] =  {      10000 };
 // above numbers might be skewed by uninterruptible syscalls, where the tick counter does not ++
 static const l4_uint64_t trace_interval_count = 1;
 static const l4_uint64_t measure_rounds = 1;
 static const int do_overhead = 0;
 // for backtracer/main.cc
 static const int do_export = 1;
-static const int app_controls_tracing = 0;
+static const int app_controls_tracing = 1;
 static const int app_prints_steps = 0;
 
 // used when app_controls_tracing == 0.
