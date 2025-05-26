@@ -155,4 +155,8 @@ $O/fiasco.elfdump: $(ELFIO_PATH)/$(ELFDUMP)
 		| tee $$target
 
 $O/%.disas:
-	objdump -lSd $(BASE_PATH)$$(readlink $(BINARY_DIR)/$*) > $@
+	if [ -f $(BASE_PATH)$$(readlink $(BINARY_DIR)/$*) ]; then \
+		objdump -lSd $(BASE_PATH)$$(readlink $(BINARY_DIR)/$*) > $@; \
+	else \
+		objdump -lSd $(BASE_PATH)$$(readlink $(LIBRARY_DIR)/$*) > $@; \
+	fi
