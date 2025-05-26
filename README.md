@@ -1,13 +1,14 @@
 # L4Re Userspace and External Backtracer
 
-This package contains the tools to interface with the Fiasco JDB Backtracing
+This package contains the tools to interface with the Fiasco JDB Kernel Backtracer
 including exporting the results.
+The Kernel Backtracer traces both user and kernel stacks, as long as the timer can interrupt the execution.
 
 # Installing / Packages
 
 For an example on how to install all needed packages, see `install.sh`. Adapt and use
 what you need in an existing L4Re development environment. In case there's a bug,
-a look at the structures in
+ask [me](mailto:antonia.obersteiner@tu-dresden.de). Maybe a look at
 [my docker- and submodule-based version](https://gitlab.hrz.tu-chemnitz.de/anob943c-at-tu-dresden.de/fl4mer)
 might be useful, using not branch `fl4mer` but `fl4mer-antonia`.
 
@@ -16,7 +17,7 @@ might be useful, using not branch `fl4mer` but `fl4mer-antonia`.
 This package is not currently part of the L4Re operating system.
 This is the documentation:
 
-## Getting a trace
+## Getting a Trace
 
 Build your L4Re with the package [backtracer](https://github.com/AntoniaObersteiner/backtracer)
 and add it as a module to your `<...>.cfg`.
@@ -45,15 +46,18 @@ int main(void) {
 }
 ```
 
-The backtracer -- when given `app_controls_tracing == 1` -- records the number of words in the backtrace buffer.
-Once that number changes, it waits until the kernel reports that tracing was stopped and starts printing.
-Direct control of the app over the backtracer -- ideally via IPC or as a library -- is planned.
+#### Mechanism of App-Controlled Tracing
 
-It may happen that the backtracer is not scheduled until the traced program(s) have already stopped the tracing.
+The backtracer -- when configured with `app_controls_tracing == 1` -- checks the number of words in the backtrace buffer.
+Once that number changes, it waits until the kernel reports that tracing was stopped and starts exporting.
+Direct control of the app over the backtracer is planned.
+
+It may happen that the backtracer is not scheduled until the traced program(s) have already stopped the tracing,
+and thus does not stop tracing normally.
 If this is a problem, set `backtracer/include/measure_defaults.h:rounds_backtracer_waits_for_start = 1`
 or another small number so it doesn't wait for 20 rounds (=20 seconds), as is the default.
 
-Currently, there is no network support, so you have to rely on the serial console.
+Currently, there is no network support, so you have to rely on the serial console export.
 Capture the print-out to a `.traced` file.
 
 ## Processing the Sample
@@ -67,10 +71,15 @@ Currently, this is the directory structure:
 ```
 
 ### ./external
-This project is controlled via Make, the Makefile is renamed to `External.make`
-to avoid conflict with L4Re's build system
+This project is controlled via the `./external/Makefile` with some extensions in `./external/Antonia.make`
+that rely on `../../../Dockerfile`. See the Make-variable `MAKEEXTRA` and the line `include $(MAKEEXTRA)`.
 
-The results are written to `data/`, usually in a subdirectory, that currently has to be explicitly named via `LABEL=`.
+Configure the variables in `./external/Makefile` according to your directory structures and requirements.
+If anything is insufficiently documented, [write me an email](mailto:antonia.obersteiner@tu-dresden.de).
+
+The results are written to `./external/data/`, usually in a subdirectory, to differentiate configurations.
+The subdirectory ('label') currently has to be explicitly named via `make LABEL=`.
+
 ```bash
 make LABEL=test data/test/hello.svg
 # equivalent to
@@ -80,20 +89,22 @@ make LABEL=test MODULE=hello ENDING=svg default
 Possible endings that can be substituted for `svg` above:
 
 - `traced`: runs the docker, collects the output
+    - relies on `Antonia.make`, configure your own `SAMPLE_PATH` in `./external/Makefile`
 - `cleaned`: removes control characters from `traced`
-	- data written as hex u64 somewhere in text with `>=<` to mark the lines
+	- exported data should be written as hex u64 in the text with `>=<` to mark the lines
 	- data has binary format with (usually 1KiB) blocks (simple and not yet very useful XOR redundancy)
-- `compressed`: export blocks from `cleaned` now contiguous without redundancy blocks
-	- still with dictionary compression on larger blocks (usually 8KiB)
+- `compressed`: extract binary data from `cleaned`: contiguous, without redundancy blocks
+	- still with dictionary compression (in larger blocks, usually 8KiB)
 - `btb`: decompressed backtrace buffer binary format as written inside the JDB BTB Kernel implementation
 - `interpreted`: human readable version of BTB format
 - `folded`: line-for-line stack-traces, input for FlameGraph
 - `svg`: output of FlameGraph
 - `log`: makes all of the above and does not delete intermediate files
 
-### how to select the traced program
+### Selection of the Traced Program and `.cfg` files
 
-`make -f External.make data/$(MODULE).svg` will start ned with the config `$(MODULE)-backtraced.cfg`.
+The build system with `Antonia.make` assumes that if you use `MODULE=hello`, you have a
+`$(L4DIR)/conf/examples/hello-backtraced.cfg` and include it in your L4 `MODULEPATH`.
 
 ## Future Delvopment
 
@@ -106,11 +117,8 @@ Possible endings that can be substituted for `svg` above:
 - clean up inner bt debugging
 - clean up inner bt preprocessor directives
 - clean up Kconfig
-- make various timers configurable
-- clean up backtracer directories
-- clean up backtracer Makefile (switch to different system?)
 - clean up backtracer block system
-- network export?
+- network export? [partially deprecated]
     - Till M nach UDP-Code fragen
     - luna, incl. Beispielprogramm
     - qemu nic-dev-type=e1000 oder so
