@@ -17,11 +17,12 @@ BASE_PATH?=../../../..
 BUILD_PATH?=$(BASE_PATH)/build
 FIASCO_BUILD_PATH?=$(BUILD_PATH)/$(ARCH)/fiasco
 L4RE_BUILD_PATH?=$(BUILD_PATH)/$(ARCH)/l4
-MAKEFLAGS?=
 MAKEEXTRA?=Antonia.make
 
 # this should not have stemless targets or redirect it's first target to main file's target 'default'
+ifneq ($(strip $(MAKEEXTRA)),)
 include $(MAKEEXTRA)
+endif
 
 FLAME_GRAPH=$(PKGDIR)/FlameGraph
 ELFIO_PATH=$(PKGDIR)/ELFIO
@@ -201,8 +202,8 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 %.log:
 	# creating the .log is mostly used to make all the intermediates
 	# without throwing them away because of make's rules for intermediate file
-	make $(MAKEFLAGS) $*.traced
-	make $(MAKEFLAGS) \
+	make $*.traced
+	make \
 		$*.cleaned \
 		$*.compressed \
 		$*.btb \
@@ -227,7 +228,7 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 	# and create svgs for them
 	# deactivated because we don't to multi-processor currently
 	# for f in $$(ls $*-*.folded); do								  \
-	# 	make $(MAKEFLAGS) $${f/folded/svg};					  \
+	# 	make $${f/folded/svg};					  \
 	# done
 
 .PHONY: clear

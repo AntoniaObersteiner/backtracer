@@ -1,6 +1,5 @@
 # if "" or "y", rebuild. if "n", don't
 DOCKER_BUILD?=
-MAKEFLAGS?=
 
 SAMPLE_RELPATH?=docker_log
 SAMPLE_PATH?=$(BASE_PATH)/$(SAMPLE_RELPATH)
