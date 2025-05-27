@@ -54,7 +54,10 @@ make -C build/amd64/l4 E=hello-backtraced qemu \
 make -C l4/pkg/backtracer/external \
 	EXTRAMAKE= \
 	SAMPLE_PATH=../../../../ \
-	LABEL=test \
+	LABEL=demo \
 	MODULE=hello \
 	ENDING=log
 
+echo "===================================================="
+echo "=> l4/pkg/backtracer/external/data/demo/hello.svg <="
+echo "===================================================="

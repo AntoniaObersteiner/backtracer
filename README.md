@@ -4,11 +4,22 @@ This package contains the tools to interface with the Fiasco JDB Kernel Backtrac
 including exporting the results.
 The Kernel Backtracer traces both user and kernel stacks, as long as the timer can interrupt the execution.
 
-# Installing / Packages
+# Quick Start
 
-For an example on how to install all needed packages, see `install.sh`. Adapt and use
-what you need in an existing L4Re development environment. In case there's a bug,
-ask [me](mailto:antonia.obersteiner@tu-dresden.de). Maybe a look at
+For an example on how to install all needed packages, build and run with the default configuration,
+see `install.sh`. It can be run in an empty directory and should result in a FrameGraph of hello.
+It needs your input twice: First, in the L4Re and Kernel Config: Leave L4Re at the defaults
+and use the following Fiasco Kernel Config:
+
+- no [P]erformance configuration
+- no [C]ompile without frame pointer
+- [A]llow tracing user and kernel stacks
+
+Secondly, it needs you to stop qemu, when the export is done. It tells you :)
+
+Adapt and use what you need for an existing L4Re development environment.
+In case there's a bug, ask [me](mailto:antonia.obersteiner@tu-dresden.de).
+Maybe a look at
 [my docker- and submodule-based version](https://gitlab.hrz.tu-chemnitz.de/anob943c-at-tu-dresden.de/fl4mer)
 might be useful, using not branch `fl4mer` but `fl4mer-antonia`.
 
