@@ -238,7 +238,7 @@ clear:
 .PHONY: redo
 redo: clear default
 
-.PHONY: clean
+.PHONY: clear_data
 clear_data:
 	# note: does not remove .cleaned or .traced files, because tracing takes so long
 	rm -f \
