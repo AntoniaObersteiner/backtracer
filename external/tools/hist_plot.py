@@ -375,6 +375,9 @@ def from_histogram():
     # remove empty bins from the end
     min_depth_min = data.query("count > 0")["depth_min"].min()
     max_depth_min = data.query("count > 0")["depth_min"].max()
+    if str(max_depth_min) == "nan":
+        print("can't produce a plot, there is no data?")
+        return
     data = data.query(f"depth_min <= {max_depth_min}")
     print(data)
 
