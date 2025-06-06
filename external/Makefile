@@ -233,7 +233,7 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 
 .PHONY: clear
 clear:
-	rm -rf data/$(LABEL)
+	rm -rf data/$(LABEL)/$(MODULE).*
 
 .PHONY: redo
 redo: clear default
