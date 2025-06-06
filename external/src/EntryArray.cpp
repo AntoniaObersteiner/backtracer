@@ -132,5 +132,9 @@ EntryArray::EntryArray (const RawEntryArray & raw_entry_array) {
 			));
 		}
 	}
+
+	std::sort(super().begin(), super().end(), [](const Entry & a, const Entry & b) {
+		return a.attribute("tsc_time") < b.attribute("tsc_time");
+	});
 }
 
