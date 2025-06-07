@@ -199,6 +199,29 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 %.pdf: %.svg
 	rsvg-convert -f pdf -o $@ $<
 
+%.core:
+	# creating the .log is mostly used to make all the intermediates
+	# without throwing them away because of make's rules for intermediate file
+	make $*.traced
+	make \
+		$*.cleaned \
+		$*.compressed \
+		$*.btb \
+		$*.interpreted \
+		$*.folded \
+		$*.histogram \
+		$*.durations \
+		$*.svg \
+		|& tee $@
+
+	# making the .folded file also creates the -0.folded, -1.folded, ...
+	# files for all observed cpu ids. we go through these files
+	# and create svgs for them
+	# deactivated because we don't to multi-processor currently
+	# for f in $$(ls $*-*.folded); do								  \
+	# 	make $${f/folded/svg};					  \
+	# done
+
 %.log:
 	# creating the .log is mostly used to make all the intermediates
 	# without throwing them away because of make's rules for intermediate file
