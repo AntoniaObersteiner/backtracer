@@ -86,10 +86,8 @@ int main(int argc, char * argv []) {
 			input_buffer[2],
 			input_buffer[3]
 		);
-		for (size_t i = 0; i < input.size(); i++) {
-			output_stream.write(reinterpret_cast<char *>(input.data()), input.size() * sizeof(uint64_t));
-		}
-		exit(0); // TODO: is this really no error?
+		output_stream.write(reinterpret_cast<char *>(input.data()), input.size() * sizeof(uint64_t));
+		return 0;
 	}
 
 	// there are usually several (probably) compressed sections of data,
