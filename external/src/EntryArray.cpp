@@ -81,9 +81,9 @@ EntryArray::EntryArray (const RawEntryArray & raw_entry_array) {
 			break;
 		}
 		switch (*type_ptr) {
-		case BTE_STACK:   [[fallthrough]]
-		case BTE_MAPPING: [[fallthrough]]
-		case BTE_CONTROL: [[fallthrough]]
+		case BTE_STACK:   [[fallthrough]];
+		case BTE_MAPPING: [[fallthrough]];
+		case BTE_CONTROL: [[fallthrough]];
 		case BTE_STATS:
 			continue;
 		default:
