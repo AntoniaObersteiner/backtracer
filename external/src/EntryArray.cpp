@@ -39,16 +39,26 @@ RawEntryArray::RawEntryArray (const std::span<uint64_t> buffer) : buffer(buffer)
 		#endif
 
 		const size_t length = reinterpret_cast<size_t>(*(current + 1));
-		if (length == 0)
-			break;
+		if (length == 0) {
+			if (offset_in_words() + 1 == buffer.size())
+				break;
+
+			throw std::runtime_error(std::format(
+				"entry of length 0 at offset {} after {} entries, buffer length is {}",
+				offset_in_words(),
+				super().size(),
+				buffer.size()
+			));
+		}
 
 		try {
 			self().push_back(current);
 		} catch (std::exception & e) {
 			throw rethrow_error<std::runtime_error>(e, std::format(
-				"there was an error in raw entry number {} @{},\nfirst bytes {:016x} {:016x} {:016x} {:016x}.",
+				"there was an error in raw entry number {} at offset {},\n"
+				"first bytes {:016x} {:016x} {:016x} {:016x}.",
 				self().size(),
-				reinterpret_cast<const void*>(current),
+				offset_in_words(),
 				*current,
 				*(current + 1),
 				*(current + 2),
