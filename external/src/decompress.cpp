@@ -64,6 +64,34 @@ int main(int argc, char * argv []) {
 		| std::ios::binary
 	};
 
+	// check if this data might actually be raw uncompressed
+	if (
+		input.size() >= 4
+		&& (
+			input_buffer[0] == 0x1 || // BTE_STACK
+			input_buffer[0] == 0x2 || // BTE_MAPPING
+			input_buffer[0] == 0x4 || // BTE_CONTROL
+			input_buffer[0] == 0x8 || // BTE_INFO
+			input_buffer[0] == 0x10   // BTE_STATS
+		)
+		&& (8 <= input_buffer[1] && input_buffer[1] <= 100) // Entry length
+		&& (input_buffer[2] > 0x10000)
+	) {
+		fprintf(stderr,
+			"WARNING: input_buffer starts with words 0x%lx, 8<= 0x%lx <=12, 0x%lx>0x10000, 0x%lx. \n\t"
+			"That's not a compression header, that's a Backtrace Buffer Entry. \n\t"
+			"So I presume you have uncompressed data and will just write that to the output again.\n",
+			input_buffer[0],
+			input_buffer[1],
+			input_buffer[2],
+			input_buffer[3]
+		);
+		for (size_t i = 0; i < input.size(); i++) {
+			output_stream.write(reinterpret_cast<char *>(input.data()), input.size() * sizeof(uint64_t));
+		}
+		exit(0); // TODO: is this really no error?
+	}
+
 	// there are usually several (probably) compressed sections of data,
 	// each with header, dictionary (if compressed) and (compressed) data
 	int section_counter = 0;
@@ -72,7 +100,10 @@ int main(int argc, char * argv []) {
 		// parse the compression_header
 		const size_t header_capacity_in_words = (sizeof(compression_header_t) - 1) / sizeof(uint64_t) + 1;
 		if (remaining_input < header_capacity_in_words) {
-			printf("input file '%s' is smaller than even the compression header??\n", input_filename.c_str());
+			printf(
+				"remaining input (%lx - %lx = %lx w) file '%s' is smaller than even the compression header??\n",
+				input.size(), input_buffer - fixed_start, remaining_input, input_filename.c_str()
+			);
 			exit(1);
 		}
 

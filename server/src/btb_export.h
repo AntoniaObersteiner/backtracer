@@ -92,6 +92,8 @@ export_backtrace_buffer_section (l4_cap_idx_t cap, bool full_section_only, bool 
 			actual_result_buffer = &dictionary_and_compressed[0];
 			actual_result_words = compressed_in_words;
 		}
+	} else {
+		actual_result_words = header_capacity_in_words + returned_words;
 	}
 
 	if (returned_words) {
