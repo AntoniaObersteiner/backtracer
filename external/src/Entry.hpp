@@ -26,8 +26,12 @@ class Entry : public std::map<std::string, uint64_t> {
 	std::vector<uint64_t> payload;
 
 public:
+	uint64_t const * entry_buffer; // pointer to the raw data, there is no safeguard that it isn't freed
+	uint64_t buffer_offset;
+
 	Entry (
-		const uint64_t * const buffer,
+		const uint64_t * const entry_buffer,
+		const std::span<const uint64_t> & complete_buffer,
 		const size_t length_in_words,
 		const EntryDescriptorMap & entry_descriptor_map
 	);
@@ -93,6 +97,7 @@ public:
 	std::string task_binaries (unsigned long task_id) const;
 
 	std::string to_string () const;
+	std::string to_hex_string () const;
 	std::string folded (const Entry * previous_entry, bool with_cpu_id, bool weight_from_time = true) const;
 };
 

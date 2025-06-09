@@ -146,7 +146,11 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 	./decompress $< $@
 
 %.interpreted: %.btb interpret $(BINARY_LIST)
-	# interpret the backtrace buffer binary format and write to $@ file, log to $@.log
+	# interpret the backtrace buffer binary format and write to $@ file
+	./interpret $< $@
+
+%.btb_lines: %.btb interpret $(BINARY_LIST)
+	# interpret the backtrace buffer binary format and write to $@ file
 	./interpret $< $@
 
 %.folded: %.btb interpret $(BINARY_LIST)

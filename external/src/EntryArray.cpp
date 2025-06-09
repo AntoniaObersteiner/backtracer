@@ -135,7 +135,7 @@ EntryArray::EntryArray (const RawEntryArray & raw_entry_array) {
 		fflush(stdout);
 		#endif
 		try {
-			super().emplace_back(raw_entry_array[i], entry_length, *entry_descriptor_map);
+			super().emplace_back(raw_entry_array[i], raw_entry_array.buffer, entry_length, *entry_descriptor_map);
 		} catch (std::exception & e) {
 			throw rethrow_error<std::runtime_error>(e, std::format(
 				"there was an error in entry number {},\nfirst bytes {:016x} {:016x} {:016x} {:016x}.",

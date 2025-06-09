@@ -4,16 +4,19 @@
 #include "Mapping.hpp"
 
 Entry::Entry (
-	const uint64_t * const buffer,
+	const uint64_t * const entry_buffer,
+	const std::span<const uint64_t> & complete_buffer,
 	const size_t length_in_words,
 	const EntryDescriptorMap & entry_descriptor_map
-) {
-	if (length_in_words < 4) {
-		throw std::runtime_error(
-			"cannot read an entry from a buffer with less than 4 remaining words!"
-		);
-	}
-	entry_types entry_type = static_cast<entry_types>(*buffer);
+) : entry_buffer(entry_buffer),
+	buffer_offset(entry_buffer - complete_buffer.data())
+{
+	if (length_in_words < 4)
+		throw std::runtime_error("cannot read an entry from an entry buffer with less than 4 words!");
+	if (entry_buffer + length_in_words > complete_buffer.data() + complete_buffer.size())
+		throw std::runtime_error("cannot read an entry from outside the complete buffer!");
+
+	entry_types entry_type = static_cast<entry_types>(*entry_buffer);
 
 	if (!entry_descriptor_map.contains(entry_type)) {
 		throw std::runtime_error(std::format(
@@ -28,7 +31,7 @@ Entry::Entry (
 	size_t offset = 1;
 	for (; offset < entry_descriptor.size(); offset++) {
 		std::string entry_name = entry_descriptor[offset];
-		self()[entry_name] = entry_descriptor.read_in(offset, buffer, length_in_words);
+		self()[entry_name] = entry_descriptor.read_in(offset, entry_buffer, length_in_words);
 	}
 	size_t payload_offset = offset;
 	size_t payload_length = length_in_words - entry_descriptor.size();
@@ -39,7 +42,7 @@ Entry::Entry (
 		if (entry_type == BTE_STACK && has_attribute("start_index"))
 			index = (index + attribute("start_index")) % payload_length;
 
-		payload[offset - payload_offset] = buffer[payload_offset + index];
+		payload[offset - payload_offset] = entry_buffer[payload_offset + index];
 	}
 	if (entry_type == BTE_MAPPING) {
 		add_mapping();
@@ -75,6 +78,14 @@ std::string Entry::to_string () const {
 		} else {
 			result += std::format("  {:15} : {:16x}\n", i, payload[i]);
 		}
+	}
+	return result;
+}
+
+std::string Entry::to_hex_string () const {
+	std::string result;
+	for (size_t i = 0; i < attribute("entry_length"); i++) {
+		result += std::format(" {:016x}", entry_buffer[i]);
 	}
 	return result;
 }

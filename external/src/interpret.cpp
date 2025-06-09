@@ -13,18 +13,21 @@ class OutputStreams {
 public:
 	enum output_mode_e {
 		raw,
+		btb_lines,
 		folded,
 		histogram,
 		durations,
 	};
-	constexpr static size_t output_mode_count = 4;
+	constexpr static size_t output_mode_count = 5;
 	constexpr static std::string output_mode_endings [output_mode_count] = {
 		"interpreted",
+		"btb_lines",
 		"folded",
 		"histogram",
 		"durations",
 	};
 	static_assert(output_mode_endings[raw]       == "interpreted");
+	static_assert(output_mode_endings[btb_lines] == "btb_lines");
 	static_assert(output_mode_endings[folded]    == "folded");
 	static_assert(output_mode_endings[histogram] == "histogram");
 	static_assert(output_mode_endings[durations] == "durations");
@@ -150,6 +153,11 @@ void interpret(
 		switch (output_streams.output_mode) {
 		case OutputStreams::raw: {
 			std::string output = "read entry: \n" + entry.to_string();
+			output_streams.line(output, entry.attribute("cpu_id"), entry.attribute("entry_type") == BTE_STACK);
+		}
+			break;
+		case OutputStreams::btb_lines: {
+			std::string output = std::format("btb @{:16x}: {}", entry.buffer_offset, entry.to_hex_string());
 			output_streams.line(output, entry.attribute("cpu_id"), entry.attribute("entry_type") == BTE_STACK);
 		}
 			break;
