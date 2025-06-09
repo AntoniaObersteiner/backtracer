@@ -6,8 +6,10 @@
 #include "Entry.hpp"
 
 class RawEntryArray : public std::vector<const uint64_t *> {
-	using Self = RawEntryArray;
-	Self & self () { return *this; }
+	using Self  = RawEntryArray;
+	using Super = std::vector<const uint64_t *>;
+	Self  & self  () { return *this; }
+	Super & super () { return static_cast<Super &>(*this); }
 
 public:
 	const std::span<uint64_t> buffer;

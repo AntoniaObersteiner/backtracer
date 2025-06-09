@@ -41,8 +41,6 @@ unsigned long get_block_line (
 		line_buffer[line_buffer_filled - 1] = '\0';
 		(*line_number) ++;
 
-		if (dbg) printf("line %4ld: '%s'\n", *line_number, line_buffer);
-
 		if (line_buffer_filled < strlen(block_marker))
 			continue;
 
@@ -151,12 +149,6 @@ void add_to_raw_block_data(
 			16
 		);
 		if (got_word) {
-			if (0) printf(
-				"written word to %p (%ld): %016lx\n",
-				block_buffer + *block_buffer_filled,
-				*block_buffer_filled,
-				block_buffer[*block_buffer_filled]
-			);
 			(*block_buffer_filled) ++;
 		}
 		i += to_skip;
@@ -312,7 +304,7 @@ unsigned long make_reorder(
 
 		missing--;
 		(*reorder)[id - block_id_start] = &(blocks[b]);
-		printf("reorder id %ld -> idx %ld\n", id, b);
+		if (dbg) printf("reorder id %ld -> idx %ld\n", id, b);
 	}
 
 	printf(
@@ -355,9 +347,9 @@ void write_block_data(
 			continue;
 		}
 
-		printf("writing block %ld: %p (%ld words) to output\n", r, blocks[r], blocks[r]->data_length_in_words);
+		if (dbg) printf("writing block %ld: %p (%ld words) to output\n", r, blocks[r], blocks[r]->data_length_in_words);
 		for (unsigned long i = 0; i < blocks[r]->data_length_in_words; i += 4) {
-			printf(
+			if (dbg) printf(
 				"words at %p: %016lx %016lx %016lx %016lx\n",
 				&(blocks[r]->data[i]),
 				blocks[r]->data[i + 0],
@@ -484,7 +476,7 @@ int main(int argc, char * argv []) {
 			continue;
 
 		unsigned long block_index = current_block - &blocks[0];
-		printf(
+		if (dbg) printf(
 			"filled block idx = %ld, id = %ld (@%p) with %ld words\n",
 			block_index, blocks[block_index].id, current_block, block_buffer_filled
 		);

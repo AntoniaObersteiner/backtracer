@@ -13,18 +13,22 @@ RawEntryArray::RawEntryArray (const std::span<uint64_t> buffer) : buffer(buffer)
 		} else if (offset_in_words() > buffer.size()) {
 			throw std::runtime_error(std::format(
 				"the end of the file is not reached exactly, "
-				"from entry @{}, offset {}. \n"
+				"from entry @{}, offset {}, number {}. \n"
 				"overshoots end by {} words.",
 				reinterpret_cast<const void *>(previous),
 				previous - buffer.data(),
+				super().size(),
 				offset_in_words() - buffer.size()
 			));
 		} else if (offset_in_words() + 4 >= buffer.size()) {
-			throw std::runtime_error(
+			throw std::runtime_error(std::format(
 				"the end of the file is not reached exactly, "
-				"there are " + std::to_string(buffer.size() - offset_in_words()) +
-				" words remaining."
-			);
+				"there are {} words remaining. entry @{}, offset {}, number {}.",
+				std::to_string(buffer.size() - offset_in_words()) ,
+				reinterpret_cast<const void *>(previous),
+				previous - buffer.data(),
+				super().size()
+			));
 		}
 		#if 0
 		printf(
