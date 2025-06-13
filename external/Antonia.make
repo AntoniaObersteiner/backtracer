@@ -1,5 +1,26 @@
 # if "" or "y", rebuild. if "n", don't
 DOCKER_BUILD?=
+# if "y", docker is used, else not
+DOCKER?=
+ifeq "$(DOCKER)" "y"
+DOCKER_OR_NOT_DOCKER_RUN=cd $(BASE_PATH) && sudo       \
+		OUTPUT=$(subst $(BASE_PATH)/,,$@)              \
+		BUILD=$(DOCKER_BUILD)                          \
+		./start_docker.sh  \
+
+DOCKER_OR_NOT_DOCKER=$(DOCKER_OR_NOT_DOCKER_RUN)       \
+		./docker.sh \
+
+# the space after the above definition is important!
+else
+DOCKER_OR_NOT_DOCKER_RUN=cd $(BASE_PATH) && 
+DOCKER_OR_NOT_DOCKER=$(DOCKER_OR_NOT_DOCKER_RUN)       \
+	make                                               \
+		OUTPUT=$(subst $(BASE_PATH)/,,$@)              \
+		BUILD=$(DOCKER_BUILD)                          \
+	docker.
+# there cannot be space at the end of the above line
+endif
 
 SAMPLE_RELPATH?=docker_log
 SAMPLE_PATH?=$(BASE_PATH)/$(SAMPLE_RELPATH)
@@ -33,19 +54,11 @@ _extra_default: default
 	#cp $< $@
 
 $(SAMPLE_PATH)/%.traced:
-	cd $(BASE_PATH) && sudo                          \
-		OUTPUT=$(subst $(BASE_PATH)/,,$@)            \
-		BUILD=$(DOCKER_BUILD)                        \
-		./start_docker.sh                            \
-		./docker.sh                                  \
-		$*-backtraced
+	$(DOCKER_OR_NOT_DOCKER)$*-backtraced
 
 .PHONY: build
 build:
-	cd $(BASE_PATH) && sudo                          \
-		./start_docker.sh                            \
-		./docker.sh                                  \
-		build
+	$(DOCKER_OR_NOT_DOCKER)build
 
 %.cleaned.svg: %.cleaned
 	# read in the qsort debug print output and plot the left/right distribution
@@ -84,23 +97,19 @@ fiasco_swap_kconfig:
 
 .PHONY: fiasco_config
 fiasco_config:
-	cd $(BASE_PATH) && sudo                                       \
-        BUILD=$(DOCKER_BUILD)                                     \
-		./start_docker.sh                                         \
+	$(DOCKER_OR_NOT_DOCKER_RUN) \
 		make -C /build/amd64/fiasco menuconfig
 	sudo cp $(FIASCO_BUILD_PATH)/$(KCONFIG_BASE).out $(FIASCO_BUILD_PATH)/$(KCONFIG).out
 	sudo cp $(FIASCO_BUILD_PATH)/$(KCONFIG_BASE).h   $(FIASCO_BUILD_PATH)/$(KCONFIG).h
 
 .PHONY: l4_config
 l4_config:
-	cd $(BASE_PATH) && sudo                                       \
-		./start_docker.sh                                         \
+	$(DOCKER_OR_NOT_DOCKER_RUN)                                   \
 		make -C /build/amd64/l4 menuconfig
 
 .PHONY: docker_bash
 docker_bash:
-	cd $(BASE_PATH) && sudo                                       \
-		./start_docker.sh                                         \
+	$(DOCKER_OR_NOT_DOCKER_RUN)                                   \
 		bash
 
 .PHONY: sample_length
