@@ -85,6 +85,7 @@ fiasco_swap_kconfig:
 .PHONY: fiasco_config
 fiasco_config:
 	cd $(BASE_PATH) && sudo                                       \
+        BUILD=$(DOCKER_BUILD)                                     \
 		./start_docker.sh                                         \
 		make -C /build/amd64/fiasco menuconfig
 	sudo cp $(FIASCO_BUILD_PATH)/$(KCONFIG_BASE).out $(FIASCO_BUILD_PATH)/$(KCONFIG).out
