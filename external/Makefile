@@ -223,7 +223,7 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 	# and create svgs for them
 	# deactivated because we don't to multi-processor currently
 	for f in $$(ls $*-*.folded); do								  \
-		make $${f/folded/svg};					  \
+		make LABEL=$(LABEL) MODULE=$(MODULE) $${f/folded/svg};	  \
 	done
 
 %.log:
@@ -255,7 +255,7 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 	# and create svgs for them
 	# deactivated because we don't to multi-processor currently
 	for f in $$(ls $*-*.folded); do								  \
-		make $${f/folded/svg};					  \
+		make LABEL=$(LABEL) MODULE=$(MODULE) $${f/folded/svg};	  \
 	done
 
 .PHONY: clear
