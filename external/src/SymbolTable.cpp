@@ -1,6 +1,9 @@
 #include "SymbolTable.hpp"
 #include <format>
 
+const std::string Symbol::file_line_regex_string { "([^\t]+)\t([0-9a-f]{16})\t([0-9a-f]{16})\t(.+)" };
+const std::regex  Symbol::file_line_regex { Symbol::file_line_regex_string };
+
 bool Symbol::starts_in_page(const size_t page_address) const {
 	return instruction_addresses.rounded(0x1000).start() == page_address;
 }

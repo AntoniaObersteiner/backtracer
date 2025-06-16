@@ -74,9 +74,6 @@ public:
 	}
 };
 
-const std::string Symbol::file_line_regex_string { "([^\t]+)\t([0-9a-f]{16})\t([0-9a-f]{16})\t(.+)" };
-const std::regex  Symbol::file_line_regex { Symbol::file_line_regex_string };
-
 class SymbolPage : public std::vector<Symbol> {
 public:
 	using Super = std::vector<Symbol>;
