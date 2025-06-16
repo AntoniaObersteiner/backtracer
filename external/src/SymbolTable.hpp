@@ -1,10 +1,13 @@
 #pragma once
+#include <filesystem>
 #include <optional>
+#include <regex>
 
 #include "map_with_errors.hpp"
 #include "elfi.hpp"
 #include "Range.hpp"
 
+class SymbolPage;
 class Symbol {
 public:
 	std::string name;
@@ -21,10 +24,58 @@ public:
 		instruction_addresses(instruction_addresses)
 	{}
 
+	static const std::string file_line_regex_string;
+	static const std::regex  file_line_regex;
+
+	static Symbol from_file_line (
+		const std::string & file_line
+	) {
+		std::smatch match;
+		bool matched = std::regex_match(file_line, match, file_line_regex);
+		if (!matched) {
+			throw std::runtime_error(std::format(
+				"could not match line '{}' with file_line_regex '{}'.",
+				file_line,
+				file_line_regex_string
+			));
+		}
+
+		const std::string binary = match[1];
+		const std::string name = match[4];
+
+		size_t start, end;
+		std::string start_str { match[2] };
+		std::string   end_str { match[3] };
+		std::from_chars(start_str.data(), start_str.data() + start_str.size(), start, 16);
+		std::from_chars(  end_str.data(),   end_str.data() +   end_str.size(),   end, 16);
+
+		Range<> instruction_addresses = Range<size_t>::with_end(start, end);
+		return Symbol(name, binary, instruction_addresses);
+	}
+
+	std::string to_file_line () const {
+		return std::format(
+			"{}\t{:016x}\t{:016x}\t{}",
+			binary,
+			instruction_addresses.start(),
+			instruction_addresses.stop(),
+			name
+		);
+	}
+
+	bool starts_in_page(const size_t page_address) const;
+
 	std::string label () const {
 		return binary + "`" + demangle(name);
 	}
+
+	std::string dbg () const {
+		return binary + "`" + demangle(name) + ":" + instruction_addresses.to_string(std::hex);
+	}
 };
+
+const std::string Symbol::file_line_regex_string { "([^\t]+)\t([0-9a-f]{16})\t([0-9a-f]{16})\t(.+)" };
+const std::regex  Symbol::file_line_regex { Symbol::file_line_regex_string };
 
 class SymbolPage : public std::vector<Symbol> {
 public:
@@ -68,7 +119,11 @@ public:
 		const ELFIO::elfio & reader
 	);
 
-	// SymbolTable () : binary("<uninitialized SymbolTable>") {}
+	SymbolTable (const std::string & symbol_table_filename);
+
+	void export_to_file (const std::filesystem::path & symbol_table_filename) const;
+
+	void insert_symbol(const Symbol & symbol);
 
 	std::optional<Symbol> find_symbol (const uint64_t instruction_pointer) const;
 };

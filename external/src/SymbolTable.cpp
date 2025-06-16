@@ -1,6 +1,10 @@
 #include "SymbolTable.hpp"
 #include <format>
 
+bool Symbol::starts_in_page(const size_t page_address) const {
+	return instruction_addresses.rounded(0x1000).start() == page_address;
+}
+
 SymbolTable::SymbolTable (
 	const std::string & binary,
 	const ELFIO::elfio & reader
@@ -37,15 +41,40 @@ SymbolTable::SymbolTable (
 					continue;
 
 				const Range instruction_addresses { value, size };
-				const Range pages = instruction_addresses.rounded(0x1000);
-
-				for (const auto & page : pages) {
-					super()[page].emplace_back(
-						name, binary,
-						instruction_addresses
-					);
-				}
+				insert_symbol(Symbol{name, binary, instruction_addresses});
 			}
+		}
+	}
+}
+void SymbolTable::insert_symbol (
+	const Symbol & symbol
+) {
+	const Range pages = symbol.instruction_addresses.rounded(0x1000);
+
+	for (const auto & page : pages) {
+		super()[page].push_back(symbol);
+	}
+}
+SymbolTable::SymbolTable (const std::string & symbol_table_filename) {
+	std::ifstream file { symbol_table_filename };
+	std::array<char, 4096> buf;
+	while (!file.eof()) {
+		file.getline(buf.data(), buf.size() - 1);
+		std::string line { buf.data() };
+		if (line.size())
+			insert_symbol(Symbol::from_file_line(line));
+	}
+}
+
+void SymbolTable::export_to_file (const std::filesystem::path & symbol_table_filename) const {
+	std::filesystem::create_directories(symbol_table_filename.parent_path());
+	std::ofstream file { symbol_table_filename };
+	for (const auto & [page_address, page] : super()) {
+		for (const auto & symbol : page) {
+			if (!symbol.starts_in_page(page_address))
+				continue;
+
+			file << symbol.to_file_line() << "\n";
 		}
 	}
 }
