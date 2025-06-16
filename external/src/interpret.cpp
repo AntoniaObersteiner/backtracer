@@ -1,4 +1,5 @@
 #include <fstream>
+#include <filesystem>
 
 #include "Mapping.hpp"
 #include "BinariesList.hpp"
@@ -6,6 +7,8 @@
 #include "SymbolTable.hpp"
 #include "mmap_file.hpp"
 #include "rethrow_error.hpp"
+
+using namespace std::literals;
 
 // TODO: eliminate code duplication with fiasco/src/jdb/jdb_btb.cpp?
 
@@ -59,7 +62,7 @@ private:
 
 public:
 	OutputStreams (
-		const std::string & output_filename,
+		const std::filesystem::path & output_filename,
 		const bool do_multi_processor
 	) : constructed(split_filename(output_filename)),
 		common_stream(base_name + "." + ending),
@@ -104,8 +107,8 @@ public:
 
 		if (!std::regex_match(output_filename, match, output_filename_regex)) {
 			throw std::runtime_error(
-				"output filename '" + output_filename + "' "
-				"is not matched by '" + output_filename_regex_string + "'!"
+				"output filename '"s + output_filename + "' "
+				"is not matched by '"s + output_filename_regex_string + "'!"
 			);
 		}
 
@@ -236,13 +239,56 @@ int main(int argc, char * argv []) {
 			OutputStreams::output_mode_endings_joined("/.")
 		));
 	}
-	OutputStreams output_streams { std::string(argv[2]), false };
+	std::filesystem::path output_path = argv[2];
+	if (!std::filesystem::is_directory(output_path.parent_path())) {
+		throw std::runtime_error(std::format(
+			"wrong arg: parent {} of output_path '{}' is not a directory!",
+			std::string(output_path.parent_path()),
+			std::string(output_path)
+		));
+	}
+	OutputStreams output_streams { output_path, false };
+
+	std::optional<std::filesystem::path> symbol_table_directory {};
+	if (argc < 4) {
+		printf(
+			"WARNING: MISSING ARG: if there is no symbol table directory, "
+			"you will not be able to interpret your stacks after recompiling the binaries.\n"
+		);
+	} else {
+		symbol_table_directory = argv[3];
+		if (!std::filesystem::is_directory(symbol_table_directory->parent_path().parent_path())) {
+			throw std::runtime_error(std::format(
+				"wrong arg: symbol_table_directory '{}''s parent dir '{}' is not a directory!",
+				std::string(*symbol_table_directory),
+				std::string( symbol_table_directory->parent_path().parent_path())
+			));
+		}
+	}
 
 	std::string binaries_list_filename = "./data/binaries.list";
 	BinariesList binaries_list { binaries_list_filename };
 
 	for (const auto &[name, path] : binaries_list) {
-		binary_symbols.emplace(
+		std::filesystem::path symbol_table_filename;
+		if (symbol_table_directory.has_value()) {
+			symbol_table_filename = symbol_table_directory.value() / (name + ".symt");
+			if (std::filesystem::is_regular_file(symbol_table_filename)) {
+				std::cout << std::format("reading symbols for '{}' from '{}'.", name, std::string(symbol_table_filename)) << std::endl;
+
+				binary_symbols.emplace(
+					std::piecewise_construct,
+					std::forward_as_tuple(name),
+					std::forward_as_tuple(symbol_table_filename)
+				);
+				// if we read it in, we do not want to write it back. that's redundant
+				continue;
+			}
+			std::cout << std::format("couldn't read symbols for '{}' from '{}', doesn't exist.", name, std::string(symbol_table_filename)) << std::endl;
+		}
+
+		// we did not hit the continue above, so we need to read it in with ELFIO
+		auto const & [new_table_it, was_inserted] = binary_symbols.emplace(
 			std::piecewise_construct,
 			std::forward_as_tuple(name),
 			std::forward_as_tuple(
@@ -250,6 +296,18 @@ int main(int argc, char * argv []) {
 				get_elfio_reader(path)
 			)
 		);
+		if (!was_inserted) {
+			throw std::runtime_error(std::format(
+				"could not store a symbol table for binary '{}', probably a binary name clash or duplication?",
+				name
+			));
+		}
+		if (symbol_table_directory.has_value()) {
+			// we couln't read it from the file, so let's write it there for next time
+			SymbolTable & symbol_table = new_table_it->second;
+			std::cout << std::format("exporting symbol table for binary '{}' to '{}'.", name, std::string(symbol_table_filename)) << std::endl;
+			symbol_table.export_to_file(symbol_table_filename);
+		}
 	}
 
 	const std::span<uint64_t> buffer = mmap_file(tracebuffer_filename);

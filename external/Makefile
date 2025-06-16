@@ -147,20 +147,20 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 
 %.interpreted: %.btb interpret $(BINARY_LIST)
 	# interpret the backtrace buffer binary format and write to $@ file
-	./interpret $< $@
+	./interpret $< $@ $(<:.btb=)/
 
 %.btb_lines: %.btb interpret $(BINARY_LIST)
 	# interpret the backtrace buffer binary format and write to $@ file
-	./interpret $< $@
+	./interpret $< $@ $(<:.btb=)/
 
 %.folded: %.btb interpret $(BINARY_LIST)
-	./interpret $< $@
+	./interpret $< $@ $(<:.btb=)/
 
 %.histogram: %.btb interpret $(BINARY_LIST)
-	./interpret $< $@
+	./interpret $< $@ $(<:.btb=)/
 
 %.durations: %.btb interpret $(BINARY_LIST)
-	./interpret $< $@
+	./interpret $< $@ $(<:.btb=)/
 
 %.histogram.svg: %.histogram ./tools/hist_plot.py
 	./tools/hist_plot.py $<
@@ -254,13 +254,14 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 	# files for all observed cpu ids. we go through these files
 	# and create svgs for them
 	# deactivated because we don't to multi-processor currently
-	# for f in $$(ls $*-*.folded); do								  \
-	# 	make $${f/folded/svg};					  \
-	# done
+	for f in $$(ls $*-*.folded); do								  \
+		make $${f/folded/svg};					  \
+	done
 
 .PHONY: clear
 clear:
-	rm -rf data/$(LABEL)/$(MODULE).*
+	rm -rf data/$(LABEL)/$(MODULE)*
+
 
 .PHONY: redo
 redo: clear default
