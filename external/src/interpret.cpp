@@ -247,7 +247,7 @@ int main(int argc, char * argv []) {
 			std::string(output_path)
 		));
 	}
-	OutputStreams output_streams { output_path, false };
+	OutputStreams output_streams { output_path, true };
 
 	std::optional<std::filesystem::path> symbol_table_directory {};
 	if (argc < 4) {

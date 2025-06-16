@@ -222,9 +222,9 @@ $D/$(LABEL)/%.traced: $(SAMPLE_PATH)/%.traced
 	# files for all observed cpu ids. we go through these files
 	# and create svgs for them
 	# deactivated because we don't to multi-processor currently
-	# for f in $$(ls $*-*.folded); do								  \
-	# 	make $${f/folded/svg};					  \
-	# done
+	for f in $$(ls $*-*.folded); do								  \
+		make $${f/folded/svg};					  \
+	done
 
 %.log:
 	# creating the .log is mostly used to make all the intermediates
