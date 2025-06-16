@@ -5,7 +5,7 @@ output_file=$2
 # and then subsequently with directories to read binaries from
 if [ -z "$path" ]; then
 	echo "clearing and writing KERNEL to '$output_file'"
-	echo "KERNEL: ../../../../build/amd64/fiasco/fiasco.debug" > $output_file
+	echo "KERNEL: ../../../../local/amd64/fiasco/fiasco.debug" > $output_file
 	exit
 fi
 if [ ! -d $path ]; then
